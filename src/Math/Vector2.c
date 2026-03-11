@@ -1,0 +1,20 @@
+//
+// Created by berke on 3/11/2026.
+//
+
+#include "../../Headers/Tools/Vector2.h"
+
+#include <math.h>
+
+float vector2_length(const Vector2 vector) {
+    return sqrtf(vector.x * vector.x + vector.y * vector.y);
+}
+
+Vector2 vector2_add(const Vector2 vector1, const Vector2 vector2) {
+    Vector2 result = {vector1.x + vector2.x, vector1.y + vector2.y};
+    return result;
+}
+Vector2 vector2_subtract(Vector2 vector1, Vector2 vector2) {
+    Vector2 result = {vector1.x - vector2.x, vector1.y - vector2.y};
+    return result;
+}

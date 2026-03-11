@@ -1,0 +1,12 @@
+//
+// Created by berke on 3/11/2026.
+//
+
+#ifndef RAYCAST_RENDERER_CONFIG_H
+#define RAYCAST_RENDERER_CONFIG_H
+
+#define SCREEN_WIDTH 800
+#define SCREEN_HEIGHT 600
+
+
+#endif //RAYCAST_RENDERER_CONFIG_H
