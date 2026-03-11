@@ -1,9 +1,9 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_render.h>
-#include <stdbool.h>
 
 #include "config.h"
 #include "Headers/Systems/Renderer.h"
+#include "Headers/Systems/InputManager.h"
 
 #include "Headers/Objects/Wall.h"
 
@@ -30,21 +30,15 @@ int main(int argc, char *argv[])
     }
     Renderer renderer = create_renderer(window, _renderer);
 
+    InputManager inputManager;
+
+
+    Wall w = {{100, 100}, {10, 10}, {0, 0, 0}};
+
     bool running = true;
     while (running) {
-
-        SDL_Event event;
-        while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_EVENT_QUIT) {
-                running = false;
-            }
-            if (event.type == SDL_EVENT_KEY_DOWN) {
-                if (event.key.key == SDLK_ESCAPE) { running = false; }
-            }
-        }
-
-        Wall w = {{100, 100}, {10, 10}, {0, 0, 0}};
-
+        input_manager_begin_frame(&inputManager);
+        if (input_manager_get_key_down(&inputManager,SDL_SCANCODE_ESCAPE)) running = false;
         begin_frame(&renderer);
 
         render_wall(&renderer, &w);

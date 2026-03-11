@@ -12,6 +12,8 @@ add_executable(Raycast_Renderer main.c
         Headers/Objects/Wall.h
         Headers/Tools/Vector3.h
         src/Math/Vector3.c
+        src/Systems/InputManager.c
+        Headers/Systems/InputManager.h
 )
 
 find_package(SDL3 CONFIG REQUIRED)
