@@ -22,6 +22,7 @@ add_executable(Raycast_Renderer main.c
         Headers/Systems/Raycast.h
         src/Objects/DebugSquare.c
         Headers/Objects/DebugSquare.h
+        Headers/Objects/Ray.h
 )
 
 find_package(SDL3 CONFIG REQUIRED)

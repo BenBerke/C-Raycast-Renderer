@@ -1,20 +1,13 @@
-//
-// Created by berke on 3/12/2026.
-//
-
 #ifndef RAYCAST_RENDERER_RAYCAST_H
 #define RAYCAST_RENDERER_RAYCAST_H
-#include <stdbool.h>
 
 #include "../Tools/Vector2.h"
+#include "../Objects/Player.h"
+#include "../Objects/Ray.h"
 
-typedef struct {
-    Vector2 position;
-    Vector2 dir;
+typedef struct WallsList WallsList;
 
-    float distance;
-} Raycast;
+float raycast_create_ray(Ray* r, Player* p, Vector2 dir, const WallsList* list);
+void raycast_move_ray(Ray* r, Vector2 dir, float speed);
 
-void raycast_move_ray();
-
-#endif //RAYCAST_RENDERER_RAYCAST_H
+#endif

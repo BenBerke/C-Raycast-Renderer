@@ -23,3 +23,7 @@ Vector2 vector2_normalized(Vector2 vector) {
     Vector2 result = {vector.x / length, vector.y / length};
     return result;
 }
+Vector2 vector2_multiply_with_float(Vector2 vector, float f) {
+    Vector2 result = {vector.x * f, vector.y * f};
+    return result;
+}

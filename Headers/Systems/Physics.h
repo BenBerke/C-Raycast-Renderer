@@ -1,20 +1,18 @@
-//
-// Created by berke on 3/12/2026.
-//
-
 #ifndef RAYCAST_RENDERER_PHYSICS_H
 #define RAYCAST_RENDERER_PHYSICS_H
 
 #include "../Objects/Player.h"
 #include "../Objects/Wall.h"
+#include "../Objects/Ray.h"
+#include <stdbool.h>
 
-typedef struct{
+typedef struct WallsList {
     Wall* items;
-
     int count;
     int size;
     int chunkSize;
 } WallsList;
+
 
 void physics_create_walls_list(WallsList* list, int chunkSize);
 void physics_push_walls_list(WallsList* list, Wall* value);
@@ -22,5 +20,6 @@ void physics_pop_walls_list(WallsList* list);
 void physics_free_walls_list(WallsList* list);
 
 void physics_check_collisions(Player* player, const WallsList* list);
+bool physics_check_ray_hit(Ray* ray, const WallsList* list);
 
-#endif //RAYCAST_RENDERER_PHYSICS_H
+#endif

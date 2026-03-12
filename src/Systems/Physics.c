@@ -3,9 +3,11 @@
 //
 
 #include "../../Headers/Systems/Physics.h"
+#include "../../config.h"
 
-#include <stdio.h>
 #include <stdlib.h>
+
+#include "../../Headers/Systems/Raycast.h"
 
 void physics_create_walls_list(WallsList* list, int chunkSize){
     list->count = 0;
@@ -78,3 +80,27 @@ void physics_check_collisions(Player* player, const WallsList* list) {
             }
     }
 }
+
+bool physics_check_ray_hit(Ray* ray, const WallsList* list) {
+    for (int i = 0; i < list->count; i++) {
+        const float half = RAY_SIZE;
+        const Wall* wall = &list->items[i];
+
+        const float px = ray->position.x;
+        const float py = ray->position.y;
+
+        const float wx = wall->position.x;
+        const float wy = wall->position.y;
+        const float w_half_x = wall->scale.x / 2.0f;
+        const float w_half_y = wall->scale.y / 2.0f;
+
+        if (px + half > wx - w_half_x &&
+            px - half < wx + w_half_x &&
+            py + half > wy - w_half_y &&
+            py - half < wy + w_half_y) {
+            return true;
+        }
+    }
+    return false;
+}
+

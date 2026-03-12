@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <math.h>
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_render.h>
 
@@ -6,6 +6,7 @@
 #include "Headers/Systems/Renderer.h"
 #include "Headers/Systems/InputManager.h"
 #include "Headers/Systems/Physics.h"
+#include "Headers/Systems/Raycast.h"
 
 #include "Headers/Objects/Wall.h"
 
@@ -62,11 +63,12 @@ int main(int argc, char *argv[])
         {{-60, 90},   {50, 50},  {0, 0, 0}},
         {{-20, -210}, {60, 60},  {0, 0, 0}},
     };
-    DebugSquare debugSquares[] = {
-        {{20, 20}, {50, 50}, {200, 200, 50}},
-    };
+
     for (int i = 0; i < sizeof(walls)/sizeof(walls[0]); i++) physics_push_walls_list(&wallsList, &walls[i]);
-    for (int i = 0; i < sizeof(debugSquares)/sizeof(debugSquares[0]); i++) render_push_debugSquares_list(&debugSquaresList, &debugSquares[i]);
+    for (int i = 0; i < RAY_COUNT; i++) {
+        DebugSquare ds = {{0,0}, {20, 20}, {0, 0, 255}};
+        render_push_debugSquares_list(&debugSquaresList, &ds);
+    }
 
     Player p = {{0, 0}, 60, {0, 0}, 6, 0.5f, 0};
 
@@ -93,10 +95,25 @@ int main(int argc, char *argv[])
             Vector2 vel = {p.speed, 0};
             player_add_velocity(&p, vel);
         }
+        if (input_manager_get_key(&inputManager, SDL_SCANCODE_Q)) {
+            p.angle += .08f;
+        }
+        if (input_manager_get_key(&inputManager, SDL_SCANCODE_E)) {
+            p.angle -= .08f;
+        }
 
         player_update(&p);
         physics_check_collisions(&p, &wallsList);
 
+        const float fov_in_rads = FOV * (M_PI / 180.f);
+        const float step = fov_in_rads / (float)(RAY_COUNT - 1);
+        for (int i = 0; i < RAY_COUNT; i++) {
+            Ray r = {{p.position.x,p.position.y}};
+            float rayAngleDeg = p.angle - fov_in_rads / 2.0f + (float)i * step;
+            Vector2 angle = {cosf(rayAngleDeg), sinf(rayAngleDeg)};
+            raycast_create_ray(&r, &p, angle, &wallsList);
+            debugSquare_set_position(&debugSquaresList.items[i], r.position);
+        }
         begin_frame(&renderer);
 
         render_walls(&renderer, &wallsList);
@@ -111,6 +128,7 @@ int main(int argc, char *argv[])
 
     physics_free_walls_list(&wallsList);
     render_free_debugSquares_list(&debugSquaresList);
+
     destroy_renderer(&renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
