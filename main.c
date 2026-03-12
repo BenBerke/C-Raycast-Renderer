@@ -95,21 +95,20 @@ int main(int argc, char *argv[])
 
         if (input_manager_get_key_down(&inputManager,SDL_SCANCODE_ESCAPE)) running = false;
 
+        Vector2 forward = { cosf(p.angle), sinf(p.angle) };
+        Vector2 right = { -sinf(p.angle), cosf(p.angle) };
+
         if (input_manager_get_key(&inputManager, SDL_SCANCODE_W)) {
-            Vector2 vel = {0, p.speed};
-            player_add_velocity(&p, vel);
+            player_add_velocity(&p, vector2_multiply_with_float(forward, p.speed));
         }
         if (input_manager_get_key(&inputManager, SDL_SCANCODE_S)) {
-            Vector2 vel = {0, -p.speed};
-            player_add_velocity(&p, vel);
+            player_add_velocity(&p, vector2_multiply_with_float(forward, -p.speed));
         }
         if (input_manager_get_key(&inputManager, SDL_SCANCODE_A)) {
-            Vector2 vel = {-p.speed, 0};
-            player_add_velocity(&p, vel);
+            player_add_velocity(&p, vector2_multiply_with_float(right, -p.speed));
         }
         if (input_manager_get_key(&inputManager, SDL_SCANCODE_D)) {
-            Vector2 vel = {p.speed, 0};
-            player_add_velocity(&p, vel);
+            player_add_velocity(&p, vector2_multiply_with_float(right, p.speed));
         }
         if (input_manager_get_key(&inputManager, SDL_SCANCODE_Q)) {
             p.angle += .08f;
