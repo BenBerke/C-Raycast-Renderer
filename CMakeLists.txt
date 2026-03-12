@@ -18,6 +18,10 @@ add_executable(Raycast_Renderer main.c
         Headers/Objects/Player.h
         src/Systems/Physics.c
         Headers/Systems/Physics.h
+        src/Systems/Raycast.c
+        Headers/Systems/Raycast.h
+        src/Objects/DebugSquare.c
+        Headers/Objects/DebugSquare.h
 )
 
 find_package(SDL3 CONFIG REQUIRED)

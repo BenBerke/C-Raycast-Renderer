@@ -18,3 +18,8 @@ Vector2 vector2_subtract(Vector2 vector1, Vector2 vector2) {
     Vector2 result = {vector1.x - vector2.x, vector1.y - vector2.y};
     return result;
 }
+Vector2 vector2_normalized(Vector2 vector) {
+    float length = vector2_length(vector);
+    Vector2 result = {vector.x / length, vector.y / length};
+    return result;
+}

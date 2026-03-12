@@ -9,6 +9,7 @@
 #include <SDL3/SDL.h>
 
 #include "../Objects/Player.h"
+#include "../Objects/DebugSquare.h"
 
 #include "Physics.h"
 
@@ -16,6 +17,14 @@ typedef struct {
     SDL_Window *window;
     SDL_Renderer *renderer;
 } Renderer;
+
+typedef struct{
+    DebugSquare* items;
+
+    int count;
+    int size;
+    int chunkSize;
+} DebugSquaresList;
 
 Renderer create_renderer(SDL_Window *window, SDL_Renderer *renderer);
 
@@ -27,5 +36,12 @@ void render_walls(const Renderer *renderer, const WallsList* walls);
 void render_player(const Renderer *renderer, const Player* player);
 
 void render_draw_grid_line(const Renderer *renderer);
+
+void render_create_debugSquares_list(DebugSquaresList* list, int chunkSize);
+void render_push_debugSquares_list(DebugSquaresList* list, DebugSquare* value);
+void render_pop_debugSquares_list(DebugSquaresList* list);
+void render_free_debugSquares_list(DebugSquaresList* list);
+void render_debugSquares(Renderer* renderer, const DebugSquaresList* squares);
+
 
 #endif //RAYCAST_RENDERER_RENDERER_H

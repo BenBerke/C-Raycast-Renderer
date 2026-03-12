@@ -37,6 +37,9 @@ int main(int argc, char *argv[])
     WallsList wallsList;
     physics_create_walls_list(&wallsList, 8);
 
+    DebugSquaresList debugSquaresList;
+    render_create_debugSquares_list(&debugSquaresList, 4);
+
     Wall walls[] = {
         // ----- OUTER BOUNDARY AT SCREEN EDGES -----
         {{0, SCREEN_HEIGHT / 2.0f - 10},   {SCREEN_WIDTH, 20}, {0, 0, 0}},   // top
@@ -59,11 +62,13 @@ int main(int argc, char *argv[])
         {{-60, 90},   {50, 50},  {0, 0, 0}},
         {{-20, -210}, {60, 60},  {0, 0, 0}},
     };
-    for (int i = 0; i < sizeof(walls)/sizeof(walls[0]); i++) {
-        physics_push_walls_list(&wallsList, &walls[i]);
-    }
+    DebugSquare debugSquares[] = {
+        {{20, 20}, {50, 50}, {200, 200, 50}},
+    };
+    for (int i = 0; i < sizeof(walls)/sizeof(walls[0]); i++) physics_push_walls_list(&wallsList, &walls[i]);
+    for (int i = 0; i < sizeof(debugSquares)/sizeof(debugSquares[0]); i++) render_push_debugSquares_list(&debugSquaresList, &debugSquares[i]);
 
-    Player p = {{0, 0}, 60, {0, 0}, 6, 0.5f};
+    Player p = {{0, 0}, 60, {0, 0}, 6, 0.5f, 0};
 
     bool running = true;
     while (running) {
@@ -96,6 +101,7 @@ int main(int argc, char *argv[])
 
         render_walls(&renderer, &wallsList);
         render_player(&renderer, &p);
+        render_debugSquares(&renderer, &debugSquaresList);
 
         end_frame(&renderer);
 
@@ -104,6 +110,7 @@ int main(int argc, char *argv[])
     }
 
     physics_free_walls_list(&wallsList);
+    render_free_debugSquares_list(&debugSquaresList);
     destroy_renderer(&renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();

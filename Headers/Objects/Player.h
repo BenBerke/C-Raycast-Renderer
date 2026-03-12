@@ -14,11 +14,15 @@ typedef struct {
 
     float speed;
     float friction;
+
+    float angle;
 } Player;
 
 void player_update(Player *player);
 void player_set_velocity(Player *player, Vector2 velocity);
 void player_set_position(Player *player, Vector2 position);
 void player_add_velocity(Player *player, Vector2 velocity);
+
+Vector2 player_get_facing_dir(Player* player);
 
 #endif //RAYCAST_RENDERER_PLAYER_H
