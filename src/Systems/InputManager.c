@@ -18,9 +18,9 @@ bool input_manager_get_key(const InputManager* inputManager, SDL_Scancode key) {
 }
 
 bool input_manager_get_key_down(const InputManager* input_manager, SDL_Scancode key) {
-    return input_manager->keyboardState[key] & !input_manager->prevKeyboardState[key];
+    return input_manager->keyboardState[key] && !input_manager->prevKeyboardState[key];
 }
 
 bool input_manager_get_key_up(const InputManager* input_manager, SDL_Scancode key) {
-    return !input_manager->keyboardState[key] & input_manager->prevKeyboardState[key];
+    return !input_manager->keyboardState[key] && input_manager->prevKeyboardState[key];
 }

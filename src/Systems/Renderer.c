@@ -5,10 +5,6 @@
 #include "../../config.h"
 #include "../../Headers/Systems/Renderer.h"
 
-#include <math.h>
-
-#include "../../config.h"
-
 Renderer create_renderer(SDL_Window *window, SDL_Renderer *renderer) {
     Renderer r;
     r.window = window;
@@ -23,29 +19,32 @@ void begin_frame(const Renderer *renderer) {
     render_draw_grid_line(renderer);
 }
 
-void end_frame(Renderer *renderer) {
+void end_frame(const Renderer *renderer) {
     SDL_Renderer* r = renderer->renderer;
     SDL_RenderPresent(r);
 }
 
-void destroy_renderer(Renderer *renderer) {
+void destroy_renderer(const Renderer *renderer) {
     SDL_DestroyRenderer(renderer->renderer);
 }
 
-void render_wall(const Renderer *renderer, Wall* wall) {
-    SDL_SetRenderDrawColor(renderer->renderer, (Uint8)wall->color.x, (Uint8)wall->color.y, (Uint8)wall->color.z, 255);
+void render_walls(const Renderer *renderer, const WallsList* walls) {
+    for (int i = 0; i < walls->count; i++) {
 
-    float x = wall->position.x;
-    float y = wall->position.y;
+        SDL_SetRenderDrawColor(renderer->renderer, (Uint8)walls->items[i].color.x, (Uint8)walls->items[i].color.y, (Uint8)walls->items[i].color.z, 255);
 
-    float scaleX = wall->scale.x;
-    float scaleY = wall->scale.y;
+        const float x = walls->items[i].position.x;
+        const float y = walls->items[i].position.y;
 
-    float screenX = (x + SCREEN_WIDTH / 2) - scaleX/2;
-    float screenY = (y + SCREEN_HEIGHT / 2) - scaleY/2;
+        const float scaleX = walls->items[i].scale.x;
+        const float scaleY = walls->items[i].scale.y;
 
-    SDL_FRect rect = {screenX, screenY, scaleX, scaleY};
-    SDL_RenderFillRect(renderer->renderer, &rect);
+        float screenX = (x + SCREEN_WIDTH / 2) - scaleX/2;
+        float screenY = (SCREEN_HEIGHT / 2 - y) - scaleY/2;
+
+        SDL_FRect rect = {screenX, screenY, scaleX, scaleY};
+        SDL_RenderFillRect(renderer->renderer, &rect);
+    }
 }
 
 void render_player(const Renderer *renderer, const Player* player) {
@@ -54,7 +53,7 @@ void render_player(const Renderer *renderer, const Player* player) {
     float a = player->scale;
 
     float screenX = (x + SCREEN_WIDTH / 2) - a/2;
-    float screenY = (y + SCREEN_HEIGHT / 2) - a/2;
+    float screenY = (SCREEN_HEIGHT / 2 - y) - a/2;
 
     SDL_FRect rect = {screenX, screenY, a, a};
     SDL_RenderFillRect(renderer->renderer, &rect);

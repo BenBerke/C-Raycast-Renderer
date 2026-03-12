@@ -32,17 +32,43 @@ int main(int argc, char *argv[])
     }
     Renderer renderer = create_renderer(window, _renderer);
 
-    InputManager inputManager;
+    InputManager inputManager = {};
 
-    Wall w = {{120, 120}, {60, 60}, {0, 0, 0}};
+    WallsList wallsList;
+    physics_create_walls_list(&wallsList, 8);
+
+    Wall walls[] = {
+        // ----- OUTER BOUNDARY AT SCREEN EDGES -----
+        {{0, SCREEN_HEIGHT / 2.0f - 10},   {SCREEN_WIDTH, 20}, {0, 0, 0}},   // top
+        {{0, -SCREEN_HEIGHT / 2.0f + 10},  {SCREEN_WIDTH, 20}, {0, 0, 0}},   // bottom
+        {{-SCREEN_WIDTH / 2.0f + 10, 0},   {20, SCREEN_HEIGHT}, {0, 0, 0}},  // left
+        {{SCREEN_WIDTH / 2.0f - 10, 0},    {20, SCREEN_HEIGHT}, {0, 0, 0}},  // right
+
+        // ----- INNER OBSTACLES -----
+        {{-220, 180}, {100, 60}, {0, 0, 0}},
+        {{40, 200},   {140, 40}, {0, 0, 0}},
+        {{240, 150},  {80, 100}, {0, 0, 0}},
+
+        {{-260, 40},  {60, 140}, {0, 0, 0}},
+        {{180, 20},   {70, 160}, {0, 0, 0}},
+
+        {{-180, -120},{140, 50}, {0, 0, 0}},
+        {{60, -160},  {120, 70}, {0, 0, 0}},
+        {{250, -190}, {90, 90},  {0, 0, 0}},
+
+        {{-60, 90},   {50, 50},  {0, 0, 0}},
+        {{-20, -210}, {60, 60},  {0, 0, 0}},
+    };
+    for (int i = 0; i < sizeof(walls)/sizeof(walls[0]); i++) {
+        physics_push_walls_list(&wallsList, &walls[i]);
+    }
+
     Player p = {{0, 0}, 60, {0, 0}, 6, 0.5f};
 
     bool running = true;
     while (running) {
         Uint32 startTime = SDL_GetTicks();
         input_manager_begin_frame(&inputManager);
-        player_update(&p);
-        physics_check_collisions(&p, &w);
 
         if (input_manager_get_key_down(&inputManager,SDL_SCANCODE_ESCAPE)) running = false;
 
@@ -63,9 +89,12 @@ int main(int argc, char *argv[])
             player_add_velocity(&p, vel);
         }
 
+        player_update(&p);
+        physics_check_collisions(&p, &wallsList);
+
         begin_frame(&renderer);
 
-        render_wall(&renderer, &w);
+        render_walls(&renderer, &wallsList);
         render_player(&renderer, &p);
 
         end_frame(&renderer);
@@ -74,6 +103,7 @@ int main(int argc, char *argv[])
         if (FRAME_DELAY > endTime) SDL_Delay(FRAME_DELAY - endTime);
     }
 
+    physics_free_walls_list(&wallsList);
     destroy_renderer(&renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();

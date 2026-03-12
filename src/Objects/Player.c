@@ -5,7 +5,7 @@
 #include "../../Headers/Objects/Player.h"
 
 void player_update(Player *player) {
-    Vector2 velocity = {player->velocity.x, -player->velocity.y};
+    Vector2 velocity = {player->velocity.x, player->velocity.y};
     player_set_position(player, vector2_add(player->position, velocity));
 
     player->velocity.x *= player->friction;
