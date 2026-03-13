@@ -78,6 +78,7 @@ int main(void) {
 
     int skyBoxTexture = create_texture("skybox", &textures, renderer.renderer);
     int wallTexture = create_texture("wall", &textures, renderer.renderer);
+    int woodTexture = create_texture("wood", &textures, renderer.renderer);
 
     const float skyDstHeight = SCREEN_HEIGHT;
     const float skyDstWidth = textures.items[skyBoxTexture].width * SCREEN_HEIGHT / textures.items[skyBoxTexture].height;
@@ -92,36 +93,36 @@ int main(void) {
     render_create_debugSquares_list(&debugSquaresList, 8);
 
     Wall walls[] = {
-        {{-260, 220}, {220, 40}, {255, 80, 80}},
-        {{40, 220},   {180, 40}, {255, 170, 60}},
-        {{280, 220},  {140, 40}, {255, 230, 90}},
+        {{-260, 220}, {220, 40}, {255, 80, 80}, wallTexture},
+        {{40, 220},   {180, 40}, {255, 170, 60}, wallTexture},
+        {{280, 220},  {140, 40}, {255, 230, 90}, wallTexture},
 
-        {{-320, 120}, {40, 160}, {80, 220, 120}},
-        {{-220, 100}, {140, 40}, {70, 180, 255}},
-        {{-120, 20},  {40, 120}, {90, 120, 255}},
-        {{-260, -40}, {180, 40}, {140, 100, 255}},
+        {{-320, 120}, {40, 160}, {80, 220, 120}, woodTexture},
+        {{-220, 100}, {140, 40}, {70, 180, 255}, woodTexture},
+        {{-120, 20},  {40, 120}, {90, 120, 255}, woodTexture},
+        {{-260, -40}, {180, 40}, {140, 100, 255}, woodTexture},
 
-        {{0, 120},    {40, 140}, {200, 90, 255}},
-        {{80, 40},    {120, 40}, {255, 90, 200}},
-        {{-20, -80},  {160, 40}, {255, 100, 140}},
-        {{40, -180},  {40, 120}, {220, 220, 220}},
+        {{0, 120},    {40, 140}, {200, 90, 255}, woodTexture},
+        {{80, 40},    {120, 40}, {255, 90, 200}, woodTexture},
+        {{-20, -80},  {160, 40}, {255, 100, 140}, woodTexture},
+        {{40, -180},  {40, 120}, {220, 220, 220}, woodTexture},
 
-        {{220, 120},  {160, 40}, {100, 220, 100}},
-        {{320, 20},   {40, 160}, {80, 220, 220}},
-        {{220, -80},  {140, 40}, {80, 140, 255}},
-        {{300, -180}, {120, 40}, {180, 80, 80}},
+        {{220, 120},  {160, 40}, {100, 220, 100}, wallTexture},
+        {{320, 20},   {40, 160}, {80, 220, 220}, wallTexture},
+        {{220, -80},  {140, 40}, {80, 140, 255}, wallTexture},
+        {{300, -180}, {120, 40}, {180, 80, 80}, wallTexture},
 
-        {{-260, -220}, {180, 40}, {120, 80, 40}},
-        {{0, -240},    {140, 40}, {60, 60, 60}},
-        {{240, -240},  {180, 40}, {40, 120, 60}},
+        {{-260, -220}, {180, 40}, {120, 80, 40}, wallTexture},
+        {{0, -240},    {140, 40}, {60, 60, 60}, wallTexture},
+        {{240, -240},  {180, 40}, {40, 120, 60}, wallTexture},
 
-        {{-60, 180},   {40, 40}, {255, 255, 255}},
-        {{160, 180},   {40, 40}, {255, 255, 255}},
-        {{-180, -140}, {50, 50}, {255, 220, 120}},
-        {{140, -20},   {50, 50}, {120, 255, 200}},
+        {{-60, 180},   {40, 40}, {255, 255, 255}, wallTexture},
+        {{160, 180},   {40, 40}, {255, 255, 255}, wallTexture},
+        {{-180, -140}, {50, 50}, {255, 220, 120}, wallTexture},
+        {{140, -20},   {50, 50}, {120, 255, 200}, wallTexture},
     };
 
-    const int wallCount = (int)(sizeof(walls) / sizeof(walls[0]));
+    const int wallCount = (sizeof(walls) / sizeof(walls[0]));
     for (int i = 0; i < wallCount; i++) {
         physics_push_walls_list(&wallsList, &walls[i]);
     }
@@ -152,13 +153,11 @@ int main(void) {
         begin_frame(&renderer, textures.items[skyBoxTexture].texture, &skyBoxRect);
 
         renderer_draw_walls(
-            &renderer,
-            textures.items[wallTexture].texture,
-            textures.items[wallTexture].width,
-            textures.items[wallTexture].height,
+            &textures,
             &player,
             &wallsList,
-            debug ? &debugSquaresList : NULL
+            &debugSquaresList,
+            &renderer
         );
 
         if (debug) {
@@ -187,7 +186,6 @@ int main(void) {
             frames = 0;
         }
     }
-
 
     physics_free_walls_list(&wallsList);
     render_free_debugSquares_list(&debugSquaresList);

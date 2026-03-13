@@ -6,6 +6,7 @@
 #include "../Objects/Player.h"
 #include "../Objects/DebugSquare.h"
 #include "Physics.h"
+#include "TextureManager.h"
 
 typedef struct {
     SDL_Window* window;
@@ -36,13 +37,11 @@ void render_debug_squares(const Renderer* renderer, const DebugSquaresList* squa
 void render_draw_grid_line(const Renderer* renderer);
 
 void renderer_draw_walls(
-    const Renderer* renderer,
-    SDL_Texture* wallTexture,
-    float textureWidth,
-    float textureHeight,
+    const TexturesList* texturesList,
     const Player* player,
     const WallsList* walls,
-    DebugSquaresList* debugSquares
+    const DebugSquaresList* debugSquares,
+    const Renderer* renderer
 );
 
 #endif

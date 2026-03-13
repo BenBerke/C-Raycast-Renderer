@@ -1,9 +1,9 @@
-#include "../../Headers/Systems/Renderer.h"
 
 #include <math.h>
 #include <stdlib.h>
 
 #include "../../config.h"
+#include "../../Headers/Systems/Renderer.h"
 #include "../../Headers/Systems/Raycast.h"
 
 Renderer create_renderer(SDL_Window* window, SDL_Renderer* renderer) {
@@ -133,13 +133,11 @@ void render_draw_grid_line(const Renderer* renderer) {
 }
 
 void renderer_draw_walls(
-    const Renderer* renderer,
-    SDL_Texture* wallTexture,
-    float textureWidth,
-    float textureHeight,
+    const TexturesList* texturesList,
     const Player* player,
     const WallsList* walls,
-    DebugSquaresList* debugSquares
+    const DebugSquaresList* debugSquares,
+    const Renderer* renderer
 ) {
     const float fovRadians = FOV * ((float)M_PI / 180.0f);
     const float step = fovRadians / (float)(RAY_COUNT - 1);
@@ -192,6 +190,10 @@ void renderer_draw_walls(
         Uint8 r = (Uint8)(hit.r * brightness);
         Uint8 g = (Uint8)(hit.g * brightness);
         Uint8 b = (Uint8)(hit.b * brightness);
+
+        float textureWidth = texturesList->items[hit.texture].width;
+        float textureHeight = texturesList->items[hit.texture].height;
+        SDL_Texture* wallTexture = texturesList->items[hit.texture].texture;
 
         int texX = (int)(hit.u * textureWidth);
         if (texX < 0) texX = 0;
