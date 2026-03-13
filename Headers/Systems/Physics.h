@@ -21,6 +21,6 @@ void physics_pop_walls_list(WallsList* list);
 void physics_free_walls_list(WallsList* list);
 
 void physics_check_collisions(Player* player, const WallsList* list);
-bool ray_intersect_wall(Vector2 origin, Vector2 dir, const Wall* wall, float* outT) ;
+bool ray_intersect_wall(Vector2 origin, Vector2 dir, const Wall* wall, float* outT, int* outSide);
 
 #endif

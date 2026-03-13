@@ -85,7 +85,7 @@ void physics_check_collisions(Player* player, const WallsList* list) {
     }
 }
 
-bool ray_intersect_wall(Vector2 origin, Vector2 dir, const Wall* wall, float* outT) {
+bool ray_intersect_wall(Vector2 origin, Vector2 dir, const Wall* wall, float* outT, int* outSide) {
     const float minX = wall->position.x - wall->scale.x / 2.0f;
     const float maxX = wall->position.x + wall->scale.x / 2.0f;
     const float minY = wall->position.y - wall->scale.y / 2.0f;
@@ -94,20 +94,37 @@ bool ray_intersect_wall(Vector2 origin, Vector2 dir, const Wall* wall, float* ou
     float tMin = -FLT_MAX;
     float tMax = FLT_MAX;
 
+    int enterSide = -1;
+    int exitSide = -1;
+
     if (fabsf(dir.x) < 0.00001f) {
         if (origin.x < minX || origin.x > maxX) return false;
     } else {
         float tx1 = (minX - origin.x) / dir.x;
         float tx2 = (maxX - origin.x) / dir.x;
 
+        int tx1Side = 2; // left
+        int tx2Side = 3; // right
+
         if (tx1 > tx2) {
             float temp = tx1;
             tx1 = tx2;
             tx2 = temp;
+
+            int tempSide = tx1Side;
+            tx1Side = tx2Side;
+            tx2Side = tempSide;
         }
 
-        if (tx1 > tMin) tMin = tx1;
-        if (tx2 < tMax) tMax = tx2;
+        if (tx1 > tMin) {
+            tMin = tx1;
+            enterSide = tx1Side;
+        }
+
+        if (tx2 < tMax) {
+            tMax = tx2;
+            exitSide = tx2Side;
+        }
     }
 
     if (fabsf(dir.y) < 0.00001f) {
@@ -116,20 +133,41 @@ bool ray_intersect_wall(Vector2 origin, Vector2 dir, const Wall* wall, float* ou
         float ty1 = (minY - origin.y) / dir.y;
         float ty2 = (maxY - origin.y) / dir.y;
 
+        int ty1Side = 1; // bottom
+        int ty2Side = 0; // top
+
         if (ty1 > ty2) {
             float temp = ty1;
             ty1 = ty2;
             ty2 = temp;
+
+            int tempSide = ty1Side;
+            ty1Side = ty2Side;
+            ty2Side = tempSide;
         }
 
-        if (ty1 > tMin) tMin = ty1;
-        if (ty2 < tMax) tMax = ty2;
+        if (ty1 > tMin) {
+            tMin = ty1;
+            enterSide = ty1Side;
+        }
+
+        if (ty2 < tMax) {
+            tMax = ty2;
+            exitSide = ty2Side;
+        }
     }
 
     if (tMin > tMax) return false;
     if (tMax < 0.0f) return false;
 
-    *outT = (tMin >= 0.0f) ? tMin : tMax;
+    if (tMin >= 0.0f) {
+        *outT = tMin;
+        *outSide = enterSide;
+    } else {
+        *outT = tMax;
+        *outSide = exitSide;
+    }
+
     return true;
 }
 

@@ -1,7 +1,10 @@
 #include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_render.h>
 #include <SDL3_image/SDL_image.h>
+#include <SDL3/SDL_timer.h>
 
 #include "config.h"
 #include "Headers/Systems/Renderer.h"
@@ -10,6 +13,9 @@
 #include "Headers/Systems/Raycast.h"
 
 #include "Headers/Objects/Wall.h"
+
+static Uint32 fpsTimer = 0;
+static int frames = 0;
 
 void movement(const InputManager* inputManager, Player* p) {
     const Vector2 forward = { cosf(p->angle), sinf(p->angle) };
@@ -62,7 +68,7 @@ int initialize(SDL_Window** window, SDL_Renderer** renderer) {
     return 0; // Success
 }
 
-int main(int argc, char *argv[]){
+int main(){
     bool debug = false;
 
     SDL_Renderer* _renderer = 0;
@@ -200,6 +206,12 @@ int main(int argc, char *argv[]){
             if (t > 1.0f) t = 1.0f;
 
             float brightness = ambient + (1.0f - ambient) * (1.0f - t);
+            switch (rayReturn.side) {
+                case 0: break;
+                case 2: case 3: brightness *= .7f; break;
+                case 4: brightness *= .3f; break;
+                default: break;
+            }
 
             Uint8 r = (Uint8)(rayReturn.r * brightness);
             Uint8 g = (Uint8)(rayReturn.g * brightness);
@@ -227,10 +239,23 @@ int main(int argc, char *argv[]){
             render_debugSquares(&renderer, &debugSquaresList);
         }
 
-        end_frame(&renderer);
+        Uint32 frameTime = SDL_GetTicks() - startTime;
+        if (FRAME_DELAY > frameTime) SDL_Delay(FRAME_DELAY - frameTime);
 
-        Uint32 endTime = SDL_GetTicks() - startTime;
-        if (FRAME_DELAY > endTime) SDL_Delay(FRAME_DELAY - endTime);
+        frames++;
+
+        float fps;
+        Uint32 now = SDL_GetTicks();
+        if (now - fpsTimer >= 1000) {
+            fps = frames * 1000.0f / (float)(now - fpsTimer);
+            fpsTimer = now;
+            frames = 0;
+        }
+        SDL_SetRenderDrawColor(renderer.renderer, 255, 255, 255, 255);
+        SDL_SetRenderScale(renderer.renderer, 2.0f, 2.0f);
+        SDL_RenderDebugTextFormat(renderer.renderer, 20, 20, "FPS: %.2f", fps);
+        SDL_SetRenderScale(renderer.renderer, 1.0f, 1.0f);
+        end_frame(&renderer);
     }
 
     physics_free_walls_list(&wallsList);
