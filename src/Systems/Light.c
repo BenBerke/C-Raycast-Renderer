@@ -45,59 +45,50 @@ void light_free_lights_list(LightsList* list) {
 }
 
 void individual_light_update(Light* light, WallsList* walls) {
+    // 1. Reset brightness
     for (int i = 0; i < walls->count; i++)
         for (int f = 0; f < 4; f++)
             walls->items[i].faceBrightness[f] = 0.0f;
 
-    int rayCount = 0;
-    switch (light->detailLevel) {
-        case MINIMAL: rayCount = 4; break;
-        case LOW: rayCount = 90; break;
-        case MEDIUM: rayCount = 180; break;
-        case HIGH: rayCount = 270; break;
-            default: return;
-    }
+    for (int i = 0; i < walls->count; i++) {
+        Wall* wall = &walls->items[i];
+        float distToWall = vector2_distance(light->position, wall->position);
+        float effectiveRange = light->distance * light->intensity;
 
-    float angleStep = 2.0f * (float)M_PI / (float)rayCount;
+        if (distToWall > effectiveRange) continue;
 
-    for (int r = 0; r < rayCount; r++) {
-        float angle = r * angleStep;
-        Vector2 dir = { cosf(angle), sinf(angle) };
+        // 2. Project the wall's corners into angles relative to the light
+        float angleToCorner1 = atan2f(wall->position.y - light->position.y,
+                                      wall->position.x - light->position.x);
+        // Note: For a precise rectangle, use its actual vertices instead of wall->position
 
-        float nearestT = 1e9f;
-        Wall* nearestWall = NULL;
-        int nearestSide = -1;
+        // 3. Instead of casting random rays, cast rays specifically across the wall's width
+        int raysForWall = 16;
+        float wallAngularWidth = 0.5f; // This should be calculated based on the wall's size
+        float startAngle = angleToCorner1 - (wallAngularWidth / 2.0f);
 
-        for (int i = 0; i < walls->count; i++) {
+        for (int r = 0; r < raysForWall; r++) {
+            float angle = startAngle + (wallAngularWidth * ((float)r / (float)raysForWall));
+            Vector2 dir = { cosf(angle), sinf(angle) };
+
             float t = 0.0f;
             int side = -1;
-            if (ray_intersect_wall(light->position, dir, &walls->items[i], &t, &side)) {
-                if (t > 0.0f && t < nearestT) {
-                    nearestT = t;
-                    nearestWall = &walls->items[i];
-                    nearestSide = side;
+
+            // Check if this specific ray hits the current wall
+            if (ray_intersect_wall(light->position, dir, wall, &t, &side)) {
+                if (t > 0.0f && t < effectiveRange) {
+                    float distanceFactor = 1.0f - (t / effectiveRange);
+                    wall->faceBrightness[side] += distanceFactor;
                 }
             }
         }
-
-        if (nearestWall != NULL && nearestSide >= 0) {
-            float falloff = 1.0f - (nearestT / light->intensity);
-            if (falloff > 0.0f)
-                nearestWall->faceBrightness[nearestSide] += falloff;
-        }
     }
 
-    // normalize by max so closest wall = 1.0, others scale relative to it
-    float maxB = 0.0f;
+    // 4. Clamp
     for (int i = 0; i < walls->count; i++)
         for (int f = 0; f < 4; f++)
-            if (walls->items[i].faceBrightness[f] > maxB)
-                maxB = walls->items[i].faceBrightness[f];
-
-    if (maxB > 0.0f)
-        for (int i = 0; i < walls->count; i++)
-            for (int f = 0; f < 4; f++)
-                walls->items[i].faceBrightness[f] /= maxB;
+            if (walls->items[i].faceBrightness[f] > 1.0f)
+                walls->items[i].faceBrightness[f] = 1.0f;
 }
 
 void light_update(LightsList* lights, WallsList* walls) {

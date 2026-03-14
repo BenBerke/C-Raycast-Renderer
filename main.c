@@ -111,7 +111,7 @@ int main(void) {
     };
 
     Light lights[] = {
-        {{-260, 100}, 500.0f, LOW},
+        {{-220, 220-100}, 150.0f, 1.0f},
     };
 
     const int wallCount = sizeof(walls) / sizeof(walls[0]);
