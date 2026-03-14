@@ -176,9 +176,10 @@ int raycast_collect_hits(
             .b = (unsigned char)wall->color.z,
             .side = (char)side,
             .u = u,
-            .texture = wall->texture,
+            .textures = -1,
             .height = wall->height
         };
+        memcpy(outHits[hitCount].textures, wall->textures, 4 * sizeof(int));
 
         hitCount++;
     }

@@ -99,14 +99,9 @@ int main(void) {
     objects_create_objects_list(&objectsList, 8);
 
     Wall walls[] = {
-           {{-260, 220}, {220, 40}, {255, 80, 80}, wallTexture, 2.0f},
-         {{40, 220},   {180, 40}, {255, 170, 60}, woodTexture, 1.5f},
-           {{280, 220},  {140, 40}, {255, 230, 90}, wallTexture, 1.0f},
-
-        {{-320, 120}, {40, 160}, {80, 220, 120}, woodTexture, .8f},
-        {{-220, 100}, {140, 40}, {70, 180, 255}, wallTexture, 1.6f},
-        {{-120, 20},  {40, 120}, {90, 120, 255}, woodTexture, 8.0f},
-       {{-260, -40}, {180, 40}, {140, 100, 255}, wallTexture, 1.2f},
+           {{-260, 220}, {220, 40}, {255, 80, 80}, {wallTexture, woodTexture, wallTexture, wallTexture}, 2.0f},
+         {{40, 220},   {180, 40}, {255, 170, 60}, {wallTexture, wallTexture, woodTexture, woodTexture}, 1.5f},
+           {{280, 220},  {140, 40}, {255, 255, 255}, {wallTexture, woodTexture, wallTexture, wallTexture}, 1.0f},
     };
 
     Object objects[] = {

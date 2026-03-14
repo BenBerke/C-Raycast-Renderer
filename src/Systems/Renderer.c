@@ -141,7 +141,6 @@ void renderer_draw(
     ObjectsList* objects
 ) {
     const float fovRadians = FOV * ((float)M_PI / 180.0f);
-    const float step = fovRadians / (float)(RAY_COUNT - 1);
     const float projectionPlane = SCREEN_WIDTH / 2.0f / tanf(fovRadians / 2.0f);
     const float sliceWidth = (float)SCREEN_WIDTH / (float)RAY_COUNT;
     const float wallWorldHeight = WALL_HEIGHT;
@@ -199,13 +198,13 @@ void renderer_draw(
             const float y1 = y2 - wallHeight * hit.height;
 
             const float maxDist = 700.0f;
-            const float ambient = .4f;
+            const float ambient = 0.4f;
 
             float t = correctedDistance / maxDist;
             if (t < 0.0f) t = 0.0f;
             if (t > 1.0f) t = 1.0f;
 
-            float brightness = ambient + (1.0f - ambient) * (1.0f - t);
+            float brightness = (ambient + (1.0f - ambient) * (1.0f - t)) * AMBIENT;
             switch (hit.side) {
                 case 0:
                     break;
@@ -224,13 +223,9 @@ void renderer_draw(
             Uint8 g = (Uint8)(hit.g * brightness);
             Uint8 b = (Uint8)(hit.b * brightness);
 
-            if (hit.texture < 0 || hit.texture >= texturesList->count) {
-                continue;
-            }
-
-            const float textureWidth = texturesList->items[hit.texture].width;
-            const float textureHeight = texturesList->items[hit.texture].height;
-            SDL_Texture* wallTexture = texturesList->items[hit.texture].texture;
+            const float textureWidth = texturesList->items[hit.textures[hit.side]].width;
+            const float textureHeight = texturesList->items[hit.textures[hit.side]].height;
+            SDL_Texture* wallTexture = texturesList->items[hit.textures[hit.side]].texture;
 
             int texX = (int)(hit.u * textureWidth);
             if (texX < 0) texX = 0;
@@ -313,15 +308,15 @@ void renderer_draw(
         int colEnd   = (int)ceilf(spriteLeft + spriteWidth);
 
         const float maxDist = 700.0f;
-        const float ambient = 0.4f;
+        const float ambient = .4f;
         float fade = correctedDistance / maxDist;
         if (fade < 0.0f) fade = 0.0f;
         if (fade > 1.0f) fade = 1.0f;
 
-        float brightnessF = ambient + (1.0f - ambient) * (1.0f - fade);
-        Uint8 r = (Uint8)(currentObject.color.x * brightnessF);
-        Uint8 g = (Uint8)(currentObject.color.y * brightnessF);
-        Uint8 b = (Uint8)(currentObject.color.z * brightnessF);
+        float brightness = (ambient + (1.0f - ambient) * (1.0f - fade)) * AMBIENT;
+        Uint8 r = (Uint8)(currentObject.color.x * brightness);
+        Uint8 g = (Uint8)(currentObject.color.y * brightness);
+        Uint8 b = (Uint8)(currentObject.color.z * brightness);
         SDL_SetTextureColorMod(spriteTexture, r, g, b);
 
         for (int col = colStart; col < colEnd; col++) {
@@ -331,7 +326,6 @@ void renderer_draw(
             if (bufferIndex < 0) bufferIndex = 0;
             if (bufferIndex >= RAY_COUNT) bufferIndex = RAY_COUNT - 1;
 
-            // Find highest wall top (min Y) among walls CLOSER than this sprite
             float clipTop = SCREEN_HEIGHT;
             for (int w = 0; w < columnWallCounts[bufferIndex]; w++) {
                 if (columnWallDists[bufferIndex][w] < correctedDistance) {

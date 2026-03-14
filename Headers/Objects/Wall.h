@@ -12,7 +12,7 @@ typedef struct {
     Vector2 position;
     Vector2 scale;
     Vector3 color;
-    int texture;
+    int textures[4];
     float height;
 } Wall;
 

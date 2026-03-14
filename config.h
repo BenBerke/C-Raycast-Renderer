@@ -12,11 +12,11 @@
 #define RAY_SIZE 0.1f
 #define MAX_RAY_LENGTH 1500
 
-#define FOV 120
+#define FOV 60
 #define RAY_COUNT SCREEN_WIDTH
 
 #define PLAYER_SPEED 5
-#define PLAYER_ROT_SPEED 0.05f
+#define PLAYER_ROT_SPEED 0.04f
 #define PLAYER_FRICTION .3f
 #define PLAYER_SCALE 15
 
@@ -25,5 +25,7 @@
 
 #define FPS 60
 #define FRAME_DELAY (1000 / FPS)
+
+#define AMBIENT .6f
 
 #endif //RAYCAST_RENDERER_CONFIG_H

@@ -11,7 +11,7 @@ typedef struct {
     unsigned char r, g, b;
     char side;      // 0 top, 1 bottom, 2 left, 3 right
     float u;        // 0.0 -> 1.0 across the wall face
-    int texture;
+    int textures[4];
     float height;
 } RayReturn;
 
