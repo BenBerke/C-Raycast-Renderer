@@ -19,7 +19,7 @@ typedef struct {
 void textureManager_create_textures_list(TexturesList* list, int chunkSize);
 void textureManager_push_textures_list(TexturesList* list, const Texture* value);
 void textureManager_pop_textures_list(TexturesList* list);
-void textureManager_free_walls_list(TexturesList* list);
+void textureManager_free_textures_list(TexturesList* list);
 
 int create_texture(const char* textureNameNoExt, TexturesList* textureList, SDL_Renderer* renderer);
 void destroy_texture(Texture* texture);

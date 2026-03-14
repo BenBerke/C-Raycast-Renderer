@@ -187,7 +187,7 @@ int main(void) {
 
     physics_free_walls_list(&wallsList);
     render_free_debugSquares_list(&debugSquaresList);
-    textureManager_free_walls_list(&textures);
+    textureManager_free_textures_list(&textures);
     objects_free_objects_list(&objectsList);
 
     destroy_renderer(&renderer);
