@@ -15,6 +15,9 @@
 #define FOV 60
 #define RAY_COUNT 90
 
+#define FOV 120
+#define RAY_COUNT 200
+
 #define PLAYER_SPEED 5
 #define PLAYER_ROT_SPEED 0.05f
 #define PLAYER_FRICTION .3f
