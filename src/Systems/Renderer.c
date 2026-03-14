@@ -108,7 +108,7 @@ void renderer_draw(
             Uint8 r = (Uint8)(hit.r * brightness);
             Uint8 g = (Uint8)(hit.g * brightness);
             Uint8 b = (Uint8)(hit.b * brightness);
-            Uint8 a = (Uint8)(hit.a);
+            Uint8 a = (Uint8)hit.a;
 
             const float textureWidth = texturesList->items[hit.textures[hit.side]].width;
             const float textureHeight = texturesList->items[hit.textures[hit.side]].height;
@@ -199,9 +199,6 @@ void renderer_draw(
         if (fade > 1.0f) fade = 1.0f;
 
         float brightness = (ambient + (1.0f - ambient) * (1.0f - fade)) * AMBIENT;
-        Uint8 r = (Uint8)(currentObject.color.x * brightness);
-        Uint8 g = (Uint8)(currentObject.color.y * brightness);
-        Uint8 b = (Uint8)(currentObject.color.z * brightness);
         Uint8 a = (Uint8)currentObject.color.q;
         SDL_SetTextureAlphaMod(spriteTexture, a);
 

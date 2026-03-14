@@ -4,7 +4,6 @@
 #include <SDL3/SDL.h>
 
 #include "../Objects/Player.h"
-#include "../Objects/DebugSquare.h"
 #include "../Objects/Object.h"
 #include "Physics.h"
 #include "TextureManager.h"

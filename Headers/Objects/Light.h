@@ -9,10 +9,17 @@
 
 #include "../../Headers/Systems/Physics.h"
 
+typedef enum {
+   MINIMAL, // 4
+   LOW, // 90
+   MEDIUM, // 180
+    HIGH, // 360
+} detailLevel;
+
 typedef struct {
     Vector2 position;
     float intensity;
-    int rayCount;
+    detailLevel detailLevel;
 } Light;
 
 typedef struct {

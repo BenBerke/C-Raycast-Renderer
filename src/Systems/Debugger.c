@@ -32,25 +32,49 @@ void render_debug_walls(const Renderer* renderer, const WallsList* walls) {
         SDL_RenderFillRect(renderer->renderer, &rect);
     }
 }
-void render_debug_light(const Renderer* renderer, const WallsList* walls) {
-    for (int i = 0; i < walls->count; i++) {
-        SDL_SetRenderDrawColor(
-            renderer->renderer,
-            (Uint8)walls->items[i].color.x,
-            (Uint8)walls->items[i].color.y,
-            (Uint8)walls->items[i].color.z,
-            255
-        );
+void render_debug_lights(const Renderer* renderer, const LightsList* lights, const WallsList* walls) {
+    for (int i = 0; i < lights->count; i++) {
+        const float x = lights->items[i].position.x;
+        const float y = lights->items[i].position.y;
+        const float screenX = (x + SCREEN_WIDTH / 2.0f) - 10.0f;
+        const float screenY = (SCREEN_HEIGHT / 2.0f - y) - 10.0f;
 
-        const float x = walls->items[i].position.x;
-        const float y = walls->items[i].position.y;
-        const float w = walls->items[i].scale.x;
-        const float h = walls->items[i].scale.y;
+        // draw light rays
+        SDL_SetRenderDrawColor(renderer->renderer, 160, 0, 0, 80);
+        int rayCount = 0;
+        switch (lights->items[i].detailLevel) {
+            case MINIMAL: rayCount = 4; break;
+            case LOW: rayCount = 90; break;
+            case MEDIUM: rayCount = 180; break;
+            case HIGH: rayCount = 270; break;
+            default: return;
+        }
+        float angleStep = 2.0f * (float)M_PI / rayCount;
+        const float startX = x + SCREEN_WIDTH / 2.0f;
+        const float startY = SCREEN_HEIGHT / 2.0f - y;
 
-        const float screenX = (x - SCREEN_WIDTH / 2.0f) - w / 2.0f;
-        const float screenY = (SCREEN_HEIGHT / 2.0f - y) - h / 2.0f;
+        for (int r = 0; r < rayCount; r++) {
+            float angle = r * angleStep;
+            Vector2 dir = { cosf(angle), sinf(angle) };
 
-        SDL_FRect rect = {screenX, screenY, w, h};
+            float nearestT = lights->items[i].intensity;
+            for (int w = 0; w < walls->count; w++) {
+                float t = 0.0f;
+                int side = -1;
+                if (ray_intersect_wall(lights->items[i].position, dir, &walls->items[w], &t, &side)) {
+                    if (t > 0.0f && t < nearestT)
+                        nearestT = t;
+                }
+            }
+
+            float endX = startX + dir.x * nearestT;
+            float endY = startY - dir.y * nearestT;
+            SDL_RenderLine(renderer->renderer, startX, startY, endX, endY);
+        }
+
+        // draw light dot on top
+        SDL_SetRenderDrawColor(renderer->renderer, 255, 0, 0, 255);
+        SDL_FRect rect = {screenX, screenY, 20.0f, 20.0f};
         SDL_RenderFillRect(renderer->renderer, &rect);
     }
 }

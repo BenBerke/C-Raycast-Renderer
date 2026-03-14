@@ -49,9 +49,18 @@ void individual_light_update(Light* light, WallsList* walls) {
         for (int f = 0; f < 4; f++)
             walls->items[i].faceBrightness[f] = 0.0f;
 
-    float angleStep = 2.0f * (float)M_PI / (float)light->rayCount;
+    int rayCount = 0;
+    switch (light->detailLevel) {
+        case MINIMAL: rayCount = 4; break;
+        case LOW: rayCount = 90; break;
+        case MEDIUM: rayCount = 180; break;
+        case HIGH: rayCount = 270; break;
+            default: return;
+    }
 
-    for (int r = 0; r < light->rayCount; r++) {
+    float angleStep = 2.0f * (float)M_PI / (float)rayCount;
+
+    for (int r = 0; r < rayCount; r++) {
         float angle = r * angleStep;
         Vector2 dir = { cosf(angle), sinf(angle) };
 

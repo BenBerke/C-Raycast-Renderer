@@ -102,19 +102,16 @@ int main(void) {
     lights_create_lights_list(&lightsList, 4);
 
     Wall walls[] = {
-           {{-260, 220}, {220, 40}, {255, 255, 255, 120}, {wallTexture, woodTexture, wallTexture, wallTexture}, 2.0f, {.0f, .0f, .0f, .0f}},
-         {{40, 220},   {180, 40}, {255, 255, 255, 250}, {wallTexture, wallTexture, woodTexture, woodTexture}, 1.5f, {.0f, .0f, .0f, .0f}},
-           {{280, 220},  {140, 40}, {255, 255, 255, 120}, {wallTexture, woodTexture, wallTexture, wallTexture}, 1.0f, {.0f, .0f, .0f, .0f}},
+            {{-260, 220}, {220, 40}, {255, 255, 255, 255}, {wallTexture, woodTexture, wallTexture, wallTexture}, 2.0f, {.0f, .0f, .0f, .0f}},
+            {{-100, 220}, {220, 40}, {255, 25, 255, 255}, {wallTexture, woodTexture, wallTexture, wallTexture}, 2.0f, {.0f, .0f, .0f, .0f}},
     };
 
     Object objects[] = {
-        {{0, 0}, {5.5f, 1},{255, 255, 255, 255}, humanTexture},
-        {{0, 190}, {1, 1},{255, 255, 255, 255}, humanTexture},
-        {{80, 190}, {1, 3},{255, 255, 255, 255}, humanTexture}
+        {{0, 0}, {1, 1},{255, 255, 255, 255}, humanTexture},
     };
 
     Light lights[] = {
-        {{0, 0}, 500.0f, 15}
+        {{-260, 100}, 500.0f, LOW},
     };
 
     const int wallCount = sizeof(walls) / sizeof(walls[0]);
@@ -163,6 +160,7 @@ int main(void) {
             render_debug_walls(&renderer, &wallsList);
             render_debug_player(&renderer, &player);
             render_debug_lineOfSight(&renderer, &player, &wallsList);
+            render_debug_lights(&renderer, &lightsList, &wallsList);
         }
 
         SDL_SetRenderDrawColor(renderer.renderer, 255, 255, 255, 255);
@@ -189,6 +187,7 @@ int main(void) {
     physics_free_walls_list(&wallsList);
     textureManager_free_textures_list(&textures);
     objects_free_objects_list(&objectsList);
+    light_free_lights_list(&lightsList);
 
     destroy_renderer(&renderer);
     SDL_DestroyWindow(window);
