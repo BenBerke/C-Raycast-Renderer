@@ -104,6 +104,10 @@ void renderer_draw(
 
             float brightness = (ambient + (1.0f - ambient) * (1.0f - t)) * AMBIENT;
             brightness *= hit.faceBrightness[hit.side];
+            if (hit.side != SUN_DIRECTION) {
+                if ((hit.side^2) == SUN_DIRECTION) brightness *= (1 - SUN_STRENGTH) / 2;
+                else brightness *= 1 - SUN_STRENGTH;
+            }
 
             Uint8 r = (Uint8)(hit.r * brightness);
             Uint8 g = (Uint8)(hit.g * brightness);
@@ -118,7 +122,7 @@ void renderer_draw(
             if (texX < 0) texX = 0;
             if (texX >= (int)textureWidth) texX = (int)textureWidth - 1;
 
-            if (hit.side == 0 || hit.side == 2) {
+            if (hit.side == 0 || hit.side == 1) {
                 texX = (int)textureWidth - 1 - texX;
             }
 

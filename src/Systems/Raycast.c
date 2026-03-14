@@ -26,7 +26,7 @@ bool ray_intersect_wall(Vector2 origin, Vector2 dir, const Wall* wall, float* ou
     } else {
         float tx1 = (minX - origin.x) / dir.x;
         float tx2 = (maxX - origin.x) / dir.x;
-        int tx1Side = 2;
+        int tx1Side = 1;
         int tx2Side = 3;
 
         if (tx1 > tx2) {
@@ -56,7 +56,7 @@ bool ray_intersect_wall(Vector2 origin, Vector2 dir, const Wall* wall, float* ou
     } else {
         float ty1 = (minY - origin.y) / dir.y;
         float ty2 = (maxY - origin.y) / dir.y;
-        int ty1Side = 1;
+        int ty1Side = 2;
         int ty2Side = 0;
 
         if (ty1 > ty2) {
@@ -120,7 +120,7 @@ int raycast_collect_hits(
     bool foundNearest = false;
 
     for (int i = 0; i < maxHits; i++) {
-        outHits[i] = (RayReturn){-1.0f, 0, 0, 0, -1, 0, {0, 0, 0, 0}, 0};
+        outHits[i] = (RayReturn){-1.0f, 0, 0, 0, -1, 0, 0, {0, 0, 0, 0}};
     }
 
     for (int i = 0; i < list->count; i++) {
@@ -153,11 +153,11 @@ int raycast_collect_hits(
         float u = 0.0f;
         switch (side) {
             case 0:
-            case 1:
+            case 2:
                 u = (hitX - minX) / wall->scale.x;
                 break;
 
-            case 2:
+            case 1:
             case 3:
                 u = (hitY - minY) / wall->scale.y;
                 break;

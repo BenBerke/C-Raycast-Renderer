@@ -11,7 +11,7 @@
 typedef struct {
     float distance;
     unsigned char r, g, b, a;
-    char side;      // 0 top, 1 bottom, 2 left, 3 right
+    char side;      // 0 top, 1 left, 2 down, 3 right
     float u;        // 0.0 -> 1.0 across the wall face
     int textures[4];
     float height;

@@ -1,4 +1,5 @@
 #include <math.h>
+#include <stdio.h>
 #include <SDL3/SDL.h>
 
 #include "config.h"
@@ -16,30 +17,30 @@ static Uint32 fpsTimer = 0;
 static int frames = 0;
 static float currentFps = 0.0f;
 
-static void movement(const InputManager* inputManager, Player* player) {
+static void movement(const InputManager* inputManager, Player* player, float deltaTime) {
     const Vector2 forward = { cosf(player->angle), sinf(player->angle) };
     const Vector2 right = { -sinf(player->angle), cosf(player->angle) };
 
     if (input_manager_get_key(inputManager, SDL_SCANCODE_W)) {
-        player_add_velocity(player, vector2_multiply_with_float(forward, player->speed));
+        player_add_velocity(player, vector2_multiply_with_float(forward, player->speed * deltaTime));
     }
     if (input_manager_get_key(inputManager, SDL_SCANCODE_S)) {
-        player_add_velocity(player, vector2_multiply_with_float(forward, -player->speed));
+        player_add_velocity(player, vector2_multiply_with_float(forward, -player->speed * deltaTime ));
     }
     if (input_manager_get_key(inputManager, SDL_SCANCODE_D)) {
-        player_add_velocity(player, vector2_multiply_with_float(right, -player->speed));
+        player_add_velocity(player, vector2_multiply_with_float(right, -player->speed * deltaTime));
     }
     if (input_manager_get_key(inputManager, SDL_SCANCODE_A)) {
-        player_add_velocity(player, vector2_multiply_with_float(right, player->speed));
+        player_add_velocity(player, vector2_multiply_with_float(right, player->speed * deltaTime));
     }
 
     if (input_manager_get_key(inputManager, SDL_SCANCODE_RIGHT) ||
         input_manager_get_key(inputManager, SDL_SCANCODE_E)) {
-        player->angle -= PLAYER_ROT_SPEED;
+        player->angle -= PLAYER_ROT_SPEED * deltaTime;
     }
     if (input_manager_get_key(inputManager, SDL_SCANCODE_LEFT) ||
         input_manager_get_key(inputManager, SDL_SCANCODE_Q)) {
-        player->angle += PLAYER_ROT_SPEED;
+        player->angle += PLAYER_ROT_SPEED * deltaTime;
     }
 }
 
@@ -85,6 +86,7 @@ int main(void) {
     int wallTexture = create_texture("wall", &textures, renderer.renderer);
     int woodTexture = create_texture("wood", &textures, renderer.renderer);
     int humanTexture = create_texture("human", &textures, renderer.renderer);
+    int whiteTexture = create_texture("white", &textures, renderer.renderer);
 
     const float skyDstHeight = SCREEN_HEIGHT;
     const float skyDstWidth = textures.items[skyBoxTexture].width * SCREEN_HEIGHT / textures.items[skyBoxTexture].height;
@@ -102,8 +104,8 @@ int main(void) {
     lights_create_lights_list(&lightsList, 4);
 
     Wall walls[] = {
-            {{-260, 220}, {220, 40}, {255, 255, 255, 255}, {wallTexture, woodTexture, wallTexture, wallTexture}, 2.0f, {.0f, .0f, .0f, .0f}},
-            {{-100, 220}, {220, 40}, {255, 25, 255, 255}, {wallTexture, woodTexture, wallTexture, wallTexture}, 2.0f, {.0f, .0f, .0f, .0f}},
+            {{-260, 220}, {220, 40}, {255, 255, 255, 255}, {wallTexture, wallTexture, wallTexture, wallTexture}, 2.0f, {1.0f, 1.0f, 1.0f, 1.0f}},
+            {{-100, 320}, {220, 40}, {255, 255, 255, 255}, {whiteTexture, whiteTexture, whiteTexture, whiteTexture}, 2.0f, {1.0f, 1.0f, 1.0f, 1.0f}},
     };
 
     Object objects[] = {
@@ -130,21 +132,24 @@ int main(void) {
     Player player = {{0, 0}, PLAYER_SCALE, {0, 0}, PLAYER_SPEED, PLAYER_FRICTION, 0};
 
     bool running = true;
+    Uint64 lastTime = SDL_GetTicksNS();
     while (running) {
+        Uint64 currentTime = SDL_GetTicksNS();
         Uint32 startTime = SDL_GetTicks();
-
+        float deltaTime = (float)(currentTime - lastTime) / 1000000000.0f;
+        lastTime = currentTime;
         input_manager_begin_frame(&inputManager);
 
         if (input_manager_get_key_down(&inputManager, SDL_SCANCODE_ESCAPE)) {
             running = false;
         }
 
-        movement(&inputManager, &player);
+        movement(&inputManager, &player, deltaTime);
         debug = input_manager_get_key(&inputManager, SDL_SCANCODE_TAB);
 
         player_update(&player);
         physics_check_collisions(&player, &wallsList);
-        light_update(&lightsList, &wallsList);
+        //light_update(&lightsList, &wallsList);
 
         begin_frame(&renderer, textures.items[skyBoxTexture].texture, &skyBoxRect);
 
