@@ -103,7 +103,7 @@ int main(void) {
 
     Wall walls[] = {
            {{-260, 220}, {220, 40}, {255, 255, 255, 120}, {wallTexture, woodTexture, wallTexture, wallTexture}, 2.0f, {.0f, .0f, .0f, .0f}},
-         {{40, 220},   {180, 40}, {255, 255, 255, 120}, {wallTexture, wallTexture, woodTexture, woodTexture}, 1.5f, {.0f, .0f, .0f, .0f}},
+         {{40, 220},   {180, 40}, {255, 255, 255, 250}, {wallTexture, wallTexture, woodTexture, woodTexture}, 1.5f, {.0f, .0f, .0f, .0f}},
            {{280, 220},  {140, 40}, {255, 255, 255, 120}, {wallTexture, woodTexture, wallTexture, wallTexture}, 1.0f, {.0f, .0f, .0f, .0f}},
     };
 

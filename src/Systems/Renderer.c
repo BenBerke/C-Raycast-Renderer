@@ -170,11 +170,11 @@ void renderer_draw(
         float screenX = (SCREEN_WIDTH / 2.0f) * (1.0f - tanf(relativeAngle) / tanf(fovRadians / 2.0f));
         float correctedDistance = distance * cosf(relativeAngle);
 
-        float baseHeight    = (WALL_HEIGHT / correctedDistance) * projectionPlane;
-        float spriteHeight  = baseHeight * currentObject.scale.y;
+        float baseHeight = (WALL_HEIGHT / correctedDistance) * projectionPlane;
+        float spriteHeight = baseHeight * currentObject.scale.y;
 
-        float spriteBottom  = (SCREEN_HEIGHT / 2.0f) + baseHeight / 2.0f; // always fixed
-        float spriteTop     = spriteBottom - spriteHeight;
+        float spriteBottom = (SCREEN_HEIGHT / 2.0f) + baseHeight / 2.0f;
+        float spriteTop = spriteBottom - spriteHeight;
 
         if (currentObject.texture < 0 || currentObject.texture >= texturesList->count) {
             continue;
@@ -202,8 +202,7 @@ void renderer_draw(
         Uint8 r = (Uint8)(currentObject.color.x * brightness);
         Uint8 g = (Uint8)(currentObject.color.y * brightness);
         Uint8 b = (Uint8)(currentObject.color.z * brightness);
-        Uint8 a = (Uint8)(currentObject.color.q);
-        SDL_SetTextureColorMod(spriteTexture, r, g, b);
+        Uint8 a = (Uint8)currentObject.color.q;
         SDL_SetTextureAlphaMod(spriteTexture, a);
 
         for (int col = colStart; col < colEnd; col++) {
@@ -214,31 +213,69 @@ void renderer_draw(
             if (bufferIndex >= RAY_COUNT) bufferIndex = RAY_COUNT - 1;
 
             float clipTop = SCREEN_HEIGHT;
+            float transparencyMultiplier = 1.0f;
+            float transWallTop = SCREEN_HEIGHT;
+
             for (int w = 0; w < columnWallCounts[bufferIndex]; w++) {
                 if (columnWallDists[bufferIndex][w] < correctedDistance) {
-                    if (columnWallAlphas[bufferIndex][w] == 255) {
-                        if (columnWallTops[bufferIndex][w] < clipTop) {
+                    float wallAlpha = (float)columnWallAlphas[bufferIndex][w];
+                    if (wallAlpha == 255) {
+                        if (columnWallTops[bufferIndex][w] < clipTop)
                             clipTop = columnWallTops[bufferIndex][w];
-                        }
+                    } else {
+                        transparencyMultiplier *= (255.0f - wallAlpha) / 255.0f;
+                        if (columnWallTops[bufferIndex][w] < transWallTop)
+                            transWallTop = columnWallTops[bufferIndex][w];
                     }
                 }
             }
+
+            float colBrightness = brightness * transparencyMultiplier;
+            if (colBrightness < 0.0f) colBrightness = 0.0f;
+
+            Uint8 cr = (Uint8)(currentObject.color.x * colBrightness);
+            Uint8 cg = (Uint8)(currentObject.color.y * colBrightness);
+            Uint8 cb = (Uint8)(currentObject.color.z * colBrightness);
+            SDL_SetTextureColorMod(spriteTexture, cr, cg, cb);
 
             float dstTop    = spriteTop;
             float dstBottom = spriteTop + spriteHeight;
             if (dstBottom > clipTop) dstBottom = clipTop;
             if (dstTop >= dstBottom) continue;
 
-            float srcYStart  = (dstTop - spriteTop) / spriteHeight * texHeight;
-            float srcYHeight = (dstBottom - dstTop) / spriteHeight * texHeight;
-
             float t    = (float)(col - colStart) / spriteWidth;
             float srcX = t * texWidth;
 
-            SDL_FRect src = { srcX, srcYStart, 1.0f, srcYHeight };
-            SDL_FRect dst = { (float)col, dstTop, 1.0f, dstBottom - dstTop };
+            // segment 1: above transparent wall — full brightness
+            float seg1Top    = dstTop;
+            float seg1Bottom = (transWallTop < dstBottom) ? transWallTop : dstBottom;
+            if (seg1Top < seg1Bottom) {
+                float srcY1 = (seg1Top - spriteTop) / spriteHeight * texHeight;
+                float srcH1 = (seg1Bottom - seg1Top) / spriteHeight * texHeight;
+                SDL_SetTextureColorMod(spriteTexture,
+                    (Uint8)(currentObject.color.x * brightness),
+                    (Uint8)(currentObject.color.y * brightness),
+                    (Uint8)(currentObject.color.z * brightness));
+                SDL_FRect src1 = { srcX, srcY1, 1.0f, srcH1 };
+                SDL_FRect dst1 = { (float)col, seg1Top, 1.0f, seg1Bottom - seg1Top };
+                SDL_RenderTexture(renderer->renderer, spriteTexture, &src1, &dst1);
+            }
 
-            SDL_RenderTexture(renderer->renderer, spriteTexture, &src, &dst);
+            // segment 2: behind transparent wall — reduced brightness
+            float seg2Top    = (transWallTop > dstTop) ? transWallTop : dstTop;
+            float seg2Bottom = dstBottom;
+            if (seg2Top < seg2Bottom) {
+                float colBrightness = brightness * transparencyMultiplier;
+                float srcY2 = (seg2Top - spriteTop) / spriteHeight * texHeight;
+                float srcH2 = (seg2Bottom - seg2Top) / spriteHeight * texHeight;
+                SDL_SetTextureColorMod(spriteTexture,
+                    (Uint8)(currentObject.color.x * colBrightness),
+                    (Uint8)(currentObject.color.y * colBrightness),
+                    (Uint8)(currentObject.color.z * colBrightness));
+                SDL_FRect src2 = { srcX, srcY2, 1.0f, srcH2 };
+                SDL_FRect dst2 = { (float)col, seg2Top, 1.0f, seg2Bottom - seg2Top };
+                SDL_RenderTexture(renderer->renderer, spriteTexture, &src2, &dst2);
+            }
         }
     }
 }
