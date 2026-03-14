@@ -14,6 +14,7 @@ typedef struct {
     Vector3 color;
     int textures[4];
     float height;
+    float faceBrightness[4];
 } Wall;
 
 #endif //RAYCAST_RENDERER_WALL_H

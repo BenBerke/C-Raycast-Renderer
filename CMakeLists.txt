@@ -29,6 +29,8 @@ add_executable(Raycast_Renderer
         src/Objects/Object.c
         Headers/Objects/Object.h
         src/Objects/Object.c
+        Headers/Objects/Light.h
+        src/Systems/Light.c
 )
 
 find_package(SDL3 CONFIG REQUIRED)

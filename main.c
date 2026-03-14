@@ -7,6 +7,7 @@
 #include "Headers/Systems/Physics.h"
 #include "Headers/Systems/TextureManager.h"
 #include "Headers/Objects/Object.h"
+#include "Headers/Objects/Light.h"
 
 
 static Uint32 fpsTimer = 0;
@@ -99,9 +100,9 @@ int main(void) {
     objects_create_objects_list(&objectsList, 8);
 
     Wall walls[] = {
-           {{-260, 220}, {220, 40}, {255, 80, 80}, {wallTexture, woodTexture, wallTexture, wallTexture}, 2.0f},
-         {{40, 220},   {180, 40}, {255, 170, 60}, {wallTexture, wallTexture, woodTexture, woodTexture}, 1.5f},
-           {{280, 220},  {140, 40}, {255, 255, 255}, {wallTexture, woodTexture, wallTexture, wallTexture}, 1.0f},
+           {{-260, 220}, {220, 40}, {255, 80, 80}, {wallTexture, woodTexture, wallTexture, wallTexture}, 2.0f, {.0f, .0f, .0f, .0f}},
+         {{40, 220},   {180, 40}, {255, 170, 60}, {wallTexture, wallTexture, woodTexture, woodTexture}, 1.5f, {.0f, .0f, .0f, .0f}},
+           {{280, 220},  {140, 40}, {255, 255, 255}, {wallTexture, woodTexture, wallTexture, wallTexture}, 1.0f, {.0f, .0f, .0f, .0f}},
     };
 
     Object objects[] = {
@@ -118,6 +119,8 @@ int main(void) {
     for (int i = 0; i < objectCount; i++) {
         objects_push_objects_list(&objectsList, &objects[i]);
     }
+
+    Light light = {{0, 0}, 500.0f, 15};
 
     for (int i = 0; i < RAY_COUNT; i++) {
         DebugSquare square = {{0, 0}, {20, 20}, {0, 0, 255}};
@@ -141,6 +144,7 @@ int main(void) {
 
         player_update(&player);
         physics_check_collisions(&player, &wallsList);
+        light_update(&light, &wallsList);
 
         begin_frame(&renderer, textures.items[skyBoxTexture].texture, &skyBoxRect);
 

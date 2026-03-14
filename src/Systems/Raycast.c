@@ -6,7 +6,7 @@
 
 #include "../../config.h"
 
-static bool ray_intersect_wall(Vector2 origin, Vector2 dir, const Wall* wall, float* outT, int* outSide) {
+bool ray_intersect_wall(Vector2 origin, Vector2 dir, const Wall* wall, float* outT, int* outSide) {
     const float minX = wall->position.x - wall->scale.x / 2.0f;
     const float maxX = wall->position.x + wall->scale.x / 2.0f;
     const float minY = wall->position.y - wall->scale.y / 2.0f;
@@ -119,7 +119,7 @@ int raycast_collect_hits(
     bool foundNearest = false;
 
     for (int i = 0; i < maxHits; i++) {
-        outHits[i] = (RayReturn){-1.0f, 0, 0, 0, -1, 0.0f, 0, 0.0f};
+        outHits[i] = (RayReturn){-1.0f, 0, 0, 0, -1, 0, {0, 0, 0, 0}, 0};
     }
 
     for (int i = 0; i < list->count; i++) {
@@ -177,9 +177,11 @@ int raycast_collect_hits(
             .side = (char)side,
             .u = u,
             .textures = -1,
-            .height = wall->height
+            .height = wall->height,
+            .faceBrightness = 0,
         };
         memcpy(outHits[hitCount].textures, wall->textures, 4 * sizeof(int));
+        memcpy(outHits[hitCount].faceBrightness, wall->faceBrightness, 4 * sizeof(float));
 
         hitCount++;
     }

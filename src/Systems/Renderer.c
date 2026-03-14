@@ -205,19 +205,7 @@ void renderer_draw(
             if (t > 1.0f) t = 1.0f;
 
             float brightness = (ambient + (1.0f - ambient) * (1.0f - t)) * AMBIENT;
-            switch (hit.side) {
-                case 0:
-                    break;
-                case 1:
-                    brightness *= 0.30f;
-                    break;
-                case 2:
-                case 3:
-                    brightness *= 0.70f;
-                    break;
-                default:
-                    break;
-            }
+            brightness *= hit.faceBrightness[hit.side];
 
             Uint8 r = (Uint8)(hit.r * brightness);
             Uint8 g = (Uint8)(hit.g * brightness);

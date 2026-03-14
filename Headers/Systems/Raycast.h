@@ -13,6 +13,7 @@ typedef struct {
     float u;        // 0.0 -> 1.0 across the wall face
     int textures[4];
     float height;
+    float faceBrightness[4];
 } RayReturn;
 
 /*
@@ -29,5 +30,7 @@ int raycast_collect_hits(
     RayReturn* outHits,
     int maxHits
 );
+
+bool ray_intersect_wall(Vector2 origin, Vector2 dir, const Wall* wall, float* outT, int* outSide);
 
 #endif
