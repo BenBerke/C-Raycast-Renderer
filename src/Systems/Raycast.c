@@ -3,7 +3,6 @@
 #include <float.h>
 #include <math.h>
 #include <stdbool.h>
-#include <stddef.h>
 
 #include "../../config.h"
 
@@ -93,66 +92,105 @@ static bool ray_intersect_wall(Vector2 origin, Vector2 dir, const Wall* wall, fl
     return true;
 }
 
-RayReturn raycast_create_ray(Ray* ray, const Player* player, Vector2 dir, const WallsList* list) {
-    RayReturn result = {-1.0f, 0, 0, 0, -1, 0.0f, 0};
+static void sort_hits_far_to_near(RayReturn* hits, int count) {
+    for (int i = 0; i < count - 1; i++) {
+        for (int j = i + 1; j < count; j++) {
+            if (hits[i].distance < hits[j].distance) {
+                RayReturn temp = hits[i];
+                hits[i] = hits[j];
+                hits[j] = temp;
+            }
+        }
+    }
+}
 
+int raycast_collect_hits(
+    Ray* nearestRay,
+    const Player* player,
+    const Vector2 dir,
+    const WallsList* list,
+    RayReturn* outHits,
+    const int maxHits
+) {
     const Vector2 origin = player->position;
-    float closestT = (float)MAX_RAY_LENGTH;
-    const Wall* closestWall = NULL;
-    int closestSide = -1;
+
+    int hitCount = 0;
+    float nearestT = (float)MAX_RAY_LENGTH;
+    bool foundNearest = false;
+
+    for (int i = 0; i < maxHits; i++) {
+        outHits[i] = (RayReturn){-1.0f, 0, 0, 0, -1, 0.0f, 0, 0.0f};
+    }
 
     for (int i = 0; i < list->count; i++) {
         float t = 0.0f;
         int side = -1;
+        const Wall* wall = &list->items[i];
 
-        if (ray_intersect_wall(origin, dir, &list->items[i], &t, &side)) {
-            if (t >= 0.0f && t < closestT) {
-                closestT = t;
-                closestWall = &list->items[i];
-                closestSide = side;
-            }
+        if (!ray_intersect_wall(origin, dir, wall, &t, &side)) {
+            continue;
         }
+        if (t < 0.0f) {
+            continue;
+        }
+
+        if (t < nearestT) {
+            nearestT = t;
+            foundNearest = true;
+        }
+
+        if (hitCount >= maxHits) {
+            continue;
+        }
+
+        const float hitX = origin.x + dir.x * t;
+        const float hitY = origin.y + dir.y * t;
+
+        const float minX = wall->position.x - wall->scale.x / 2.0f;
+        const float minY = wall->position.y - wall->scale.y / 2.0f;
+
+        float u = 0.0f;
+        switch (side) {
+            case 0:
+            case 1:
+                u = (hitX - minX) / wall->scale.x;
+                break;
+
+            case 2:
+            case 3:
+                u = (hitY - minY) / wall->scale.y;
+                break;
+
+            default:
+                u = 0.0f;
+                break;
+        }
+
+        if (u < 0.0f) u = 0.0f;
+        if (u > 1.0f) u = 1.0f;
+
+        outHits[hitCount] = (RayReturn){
+            .distance = t,
+            .r = (unsigned char)wall->color.x,
+            .g = (unsigned char)wall->color.y,
+            .b = (unsigned char)wall->color.z,
+            .side = (char)side,
+            .u = u,
+            .texture = wall->texture,
+            .height = wall->height
+        };
+
+        hitCount++;
     }
 
-    if (closestWall == NULL) {
-        ray->position.x = origin.x + dir.x * MAX_RAY_LENGTH;
-        ray->position.y = origin.y + dir.y * MAX_RAY_LENGTH;
-        return result;
+    if (foundNearest) {
+        nearestRay->position.x = origin.x + dir.x * nearestT;
+        nearestRay->position.y = origin.y + dir.y * nearestT;
+    } else {
+        nearestRay->position.x = origin.x + dir.x * MAX_RAY_LENGTH;
+        nearestRay->position.y = origin.y + dir.y * MAX_RAY_LENGTH;
     }
 
-    ray->position.x = origin.x + dir.x * closestT;
-    ray->position.y = origin.y + dir.y * closestT;
-
-    result.distance = closestT;
-    result.r = (unsigned char)closestWall->color.x;
-    result.g = (unsigned char)closestWall->color.y;
-    result.b = (unsigned char)closestWall->color.z;
-    result.side = (char)closestSide;
-    result.texture = closestWall->texture;
-
-    const float minX = closestWall->position.x - closestWall->scale.x / 2.0f;
-    const float minY = closestWall->position.y - closestWall->scale.y / 2.0f;
-
-    float u = 0.0f;
-    switch (result.side) {
-        case 0:
-        case 1:
-            u = (ray->position.x - minX) / closestWall->scale.x;
-            break;
-
-        case 2:
-        case 3:
-            u = (ray->position.y - minY) / closestWall->scale.y;
-            break;
-
-        default:
-            u = 0.0f;
-            break;
-    }
-
-    if (u < 0.0f) u = 0.0f;
-    if (u > 1.0f) u = 1.0f;
-
-    result.u = u;
-    return result;
+    sort_hits_far_to_near(outHits, hitCount);
+    return hitCount;
 }

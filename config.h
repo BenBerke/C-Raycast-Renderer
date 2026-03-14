@@ -20,6 +20,9 @@
 #define PLAYER_FRICTION .3f
 #define PLAYER_SCALE 15
 
+#define WALL_HEIGHT 100
+#define MAX_WALL_OVERLAP 4
+
 #define FPS 60
 #define FRAME_DELAY (1000 / FPS)
 

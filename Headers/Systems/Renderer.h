@@ -40,7 +40,7 @@ void renderer_draw_walls(
     const TexturesList* texturesList,
     const Player* player,
     const WallsList* walls,
-    const DebugSquaresList* debugSquares,
+    DebugSquaresList* debugSquares,
     const Renderer* renderer
 );
 

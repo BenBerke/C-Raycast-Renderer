@@ -4,6 +4,9 @@
 
 #include "../../config.h"
 #include "../../Headers/Systems/Renderer.h"
+
+#include <stdio.h>
+
 #include "../../Headers/Systems/Raycast.h"
 
 Renderer create_renderer(SDL_Window* window, SDL_Renderer* renderer) {
@@ -136,86 +139,110 @@ void renderer_draw_walls(
     const TexturesList* texturesList,
     const Player* player,
     const WallsList* walls,
-    const DebugSquaresList* debugSquares,
+    DebugSquaresList* debugSquares,
     const Renderer* renderer
 ) {
     const float fovRadians = FOV * ((float)M_PI / 180.0f);
     const float step = fovRadians / (float)(RAY_COUNT - 1);
     const float projectionPlane = (SCREEN_WIDTH / 2.0f) / tanf(fovRadians / 2.0f);
-    const float wallWorldHeight = 100.0f;
     const float sliceWidth = (float)SCREEN_WIDTH / (float)RAY_COUNT;
+    const float wallWorldHeight = WALL_HEIGHT;
 
-    for (int i = 0; i < RAY_COUNT; i++) {
-        Ray ray = {{player->position.x, player->position.y}};
-        const float rayAngle = player->angle + fovRadians / 2.0f - (float)i * step;
+    for (int rayIndex = 0; rayIndex < RAY_COUNT; rayIndex++) {
+        Ray nearestRay = {{player->position.x, player->position.y}};
+        const float rayAngle = player->angle + fovRadians / 2.0f - (float)rayIndex * step;
         const Vector2 dir = { cosf(rayAngle), sinf(rayAngle) };
 
-        const RayReturn hit = raycast_create_ray(&ray, player, dir, walls);
-        if (hit.distance < 0.0f) {
+        RayReturn hits[MAX_WALL_OVERLAP];
+        const int hitCount = raycast_collect_hits(
+            &nearestRay,
+            player,
+            dir,
+            walls,
+            hits,
+            MAX_WALL_OVERLAP
+        );
+
+        if (hitCount <= 0) {
             continue;
         }
 
-        float correctedDistance = hit.distance * cosf(rayAngle - player->angle);
-        if (correctedDistance < 0.001f) {
-            correctedDistance = 0.001f;
-        }
-
-        const float wallHeight = (wallWorldHeight / correctedDistance) * projectionPlane;
-
-        int xStart = (int)floorf((float)i * sliceWidth);
-        int xEnd = (int)ceilf((float)(i + 1) * sliceWidth);
+        const int xStart = (int)floorf((float)rayIndex * sliceWidth);
+        int xEnd = (int)ceilf((float)(rayIndex + 1) * sliceWidth);
         if (xEnd <= xStart) {
             xEnd = xStart + 1;
         }
 
-        const float y1 = SCREEN_HEIGHT / 2.0f - wallHeight / 2.0f;
-        const float y2 = SCREEN_HEIGHT / 2.0f + wallHeight / 2.0f;
+        for (int hitIndex = 0; hitIndex < hitCount; hitIndex++) {
+            const RayReturn hit = hits[hitIndex];
 
-        const float maxDist = 700.0f;
-        const float ambient = 0.25f;
+            float correctedDistance = hit.distance * cosf(rayAngle - player->angle);
+            if (correctedDistance < 0.001f) {
+                correctedDistance = 0.001f;
+            }
 
-        float t = correctedDistance / maxDist;
-        if (t < 0.0f) t = 0.0f;
-        if (t > 1.0f) t = 1.0f;
+            const float wallHeight = (wallWorldHeight / correctedDistance) * projectionPlane;
 
-        float brightness = ambient + (1.0f - ambient) * (1.0f - t);
-        switch (hit.side) {
-            case 0: break;
-            case 1: brightness *= 0.30f; break;
-            case 2:
-            case 3: brightness *= 0.70f; break;
-            default: break;
+            const float horizon = SCREEN_HEIGHT / 2.0f;
+            const float y2 = horizon + wallHeight * 0.5f;
+            const float y1 = y2 - wallHeight * hit.height;
+
+            const float maxDist = 700.0f;
+            const float ambient = 0.4f;
+
+            float t = correctedDistance / maxDist;
+            if (t < 0.0f) t = 0.0f;
+            if (t > 1.0f) t = 1.0f;
+
+            float brightness = ambient + (1.0f - ambient) * (1.0f - t);
+            switch (hit.side) {
+                case 0:
+                    break;
+                case 1:
+                    brightness *= 0.30f;
+                    break;
+                case 2:
+                case 3:
+                    brightness *= 0.70f;
+                    break;
+                default:
+                    break;
+            }
+
+            Uint8 r = (Uint8)(hit.r * brightness);
+            Uint8 g = (Uint8)(hit.g * brightness);
+            Uint8 b = (Uint8)(hit.b * brightness);
+
+            if (hit.texture < 0 || hit.texture >= texturesList->count) {
+                continue;
+            }
+
+            const float textureWidth = texturesList->items[hit.texture].width;
+            const float textureHeight = texturesList->items[hit.texture].height;
+            SDL_Texture* wallTexture = texturesList->items[hit.texture].texture;
+
+            int texX = (int)(hit.u * textureWidth);
+            if (texX < 0) texX = 0;
+            if (texX >= (int)textureWidth) texX = (int)textureWidth - 1;
+
+            if (hit.side == 0 || hit.side == 2) {
+                texX = (int)textureWidth - 1 - texX;
+            }
+
+            SDL_FRect src = { (float)texX, 0.0f, 1.0f, textureHeight };
+            SDL_FRect dst = {
+                (float)xStart,
+                y1,
+                (float)(xEnd - xStart),
+                y2 - y1
+            };
+
+            SDL_SetTextureColorMod(wallTexture, r, g, b);
+            SDL_RenderTexture(renderer->renderer, wallTexture, &src, &dst);
         }
 
-        Uint8 r = (Uint8)(hit.r * brightness);
-        Uint8 g = (Uint8)(hit.g * brightness);
-        Uint8 b = (Uint8)(hit.b * brightness);
-
-        float textureWidth = texturesList->items[hit.texture].width;
-        float textureHeight = texturesList->items[hit.texture].height;
-        SDL_Texture* wallTexture = texturesList->items[hit.texture].texture;
-
-        int texX = (int)(hit.u * textureWidth);
-        if (texX < 0) texX = 0;
-        if (texX >= (int)textureWidth) texX = (int)textureWidth - 1;
-
-        if (hit.side == 0 || hit.side == 2) {
-            texX = (int)textureWidth - 1 - texX;
-        }
-
-        SDL_FRect src = { (float)texX, 0.0f, 1.0f, textureHeight };
-        SDL_FRect dst = {
-            (float)xStart,
-            y1,
-            (float)(xEnd - xStart),
-            y2 - y1
-        };
-
-        SDL_SetTextureColorMod(wallTexture, r, g, b);
-        SDL_RenderTexture(renderer->renderer, wallTexture, &src, &dst);
-
-        if (debugSquares != NULL && i < debugSquares->count) {
-            debugSquares->items[i].position = ray.position;
+        if (debugSquares != NULL && rayIndex < debugSquares->count) {
+            debugSquares->items[rayIndex].position = nearestRay.position;
         }
     }
 }

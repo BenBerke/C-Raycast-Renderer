@@ -8,11 +8,11 @@ add_executable(Raycast_Renderer
         config.h
         src/Systems/Renderer.c
         Headers/Systems/Renderer.h
-        src/Math/Vector2.c
+        src/Tools/Vector2.c
         Headers/Tools/Vector2.h
         Headers/Objects/Wall.h
         Headers/Tools/Vector3.h
-        src/Math/Vector3.c
+        src/Tools/Vector3.c
         src/Systems/InputManager.c
         Headers/Systems/InputManager.h
         src/Objects/Player.c
@@ -26,6 +26,9 @@ add_executable(Raycast_Renderer
         Headers/Objects/Ray.h
         src/Systems/TextureManager.c
         Headers/Systems/TextureManager.h
+        src/Objects/GameObject.c
+        Headers/Objects/GameObject.h
+        src/Objects/GameObject.c
 )
 
 find_package(SDL3 CONFIG REQUIRED)
