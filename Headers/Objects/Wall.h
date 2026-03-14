@@ -6,12 +6,12 @@
 #define RAYCAST_RENDERER_WALL_H
 
 #include "../Tools/Vector2.h"
-#include "../Tools/Vector3.h"
+#include "../Tools/Vector4.h"
 
 typedef struct {
     Vector2 position;
     Vector2 scale;
-    Vector3 color;
+    Vector4 color;
     int textures[4];
     float height;
     float faceBrightness[4];

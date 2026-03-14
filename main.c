@@ -6,6 +6,8 @@
 #include "Headers/Systems/InputManager.h"
 #include "Headers/Systems/Physics.h"
 #include "Headers/Systems/TextureManager.h"
+#include "Headers/Systems/Debugger.h"
+
 #include "Headers/Objects/Object.h"
 #include "Headers/Objects/Light.h"
 
@@ -93,22 +95,26 @@ int main(void) {
     WallsList wallsList;
     physics_create_walls_list(&wallsList, 8);
 
-    DebugSquaresList debugSquaresList;
-    render_create_debugSquares_list(&debugSquaresList, 8);
-
     ObjectsList objectsList;
     objects_create_objects_list(&objectsList, 8);
 
+    LightsList lightsList;
+    lights_create_lights_list(&lightsList, 4);
+
     Wall walls[] = {
-           {{-260, 220}, {220, 40}, {255, 80, 80}, {wallTexture, woodTexture, wallTexture, wallTexture}, 2.0f, {.0f, .0f, .0f, .0f}},
-         {{40, 220},   {180, 40}, {255, 170, 60}, {wallTexture, wallTexture, woodTexture, woodTexture}, 1.5f, {.0f, .0f, .0f, .0f}},
-           {{280, 220},  {140, 40}, {255, 255, 255}, {wallTexture, woodTexture, wallTexture, wallTexture}, 1.0f, {.0f, .0f, .0f, .0f}},
+           {{-260, 220}, {220, 40}, {255, 255, 255, 120}, {wallTexture, woodTexture, wallTexture, wallTexture}, 2.0f, {.0f, .0f, .0f, .0f}},
+         {{40, 220},   {180, 40}, {255, 255, 255, 120}, {wallTexture, wallTexture, woodTexture, woodTexture}, 1.5f, {.0f, .0f, .0f, .0f}},
+           {{280, 220},  {140, 40}, {255, 255, 255, 120}, {wallTexture, woodTexture, wallTexture, wallTexture}, 1.0f, {.0f, .0f, .0f, .0f}},
     };
 
     Object objects[] = {
-        {{0, 0}, {5.5f, 1},{5, 255, 180}, humanTexture},
-        {{0, 190}, {1, 1},{255, 255, 255}, humanTexture},
-        {{80, 190}, {1, 3},{25, 25, 255}, humanTexture}
+        {{0, 0}, {5.5f, 1},{255, 255, 255, 255}, humanTexture},
+        {{0, 190}, {1, 1},{255, 255, 255, 255}, humanTexture},
+        {{80, 190}, {1, 3},{255, 255, 255, 255}, humanTexture}
+    };
+
+    Light lights[] = {
+        {{0, 0}, 500.0f, 15}
     };
 
     const int wallCount = sizeof(walls) / sizeof(walls[0]);
@@ -119,12 +125,9 @@ int main(void) {
     for (int i = 0; i < objectCount; i++) {
         objects_push_objects_list(&objectsList, &objects[i]);
     }
-
-    Light light = {{0, 0}, 500.0f, 15};
-
-    for (int i = 0; i < RAY_COUNT; i++) {
-        DebugSquare square = {{0, 0}, {20, 20}, {0, 0, 255}};
-        render_push_debugSquares_list(&debugSquaresList, &square);
+    const int lightCount = sizeof(lights) / sizeof(lights[0]);
+    for (int i = 0; i < lightCount; i++) {
+        light_push_lights_list(&lightsList, &lights[i]);
     }
 
     Player player = {{0, 0}, PLAYER_SCALE, {0, 0}, PLAYER_SPEED, PLAYER_FRICTION, 0};
@@ -144,7 +147,7 @@ int main(void) {
 
         player_update(&player);
         physics_check_collisions(&player, &wallsList);
-        light_update(&light, &wallsList);
+        light_update(&lightsList, &wallsList);
 
         begin_frame(&renderer, textures.items[skyBoxTexture].texture, &skyBoxRect);
 
@@ -152,7 +155,6 @@ int main(void) {
             &textures,
             &player,
             &wallsList,
-            &debugSquaresList,
             &renderer,
             &objectsList
         );
@@ -160,7 +162,7 @@ int main(void) {
         if (debug) {
             render_debug_walls(&renderer, &wallsList);
             render_debug_player(&renderer, &player);
-            render_debug_squares(&renderer, &debugSquaresList);
+            render_debug_lineOfSight(&renderer, &player, &wallsList);
         }
 
         SDL_SetRenderDrawColor(renderer.renderer, 255, 255, 255, 255);
@@ -185,7 +187,6 @@ int main(void) {
     }
 
     physics_free_walls_list(&wallsList);
-    render_free_debugSquares_list(&debugSquaresList);
     textureManager_free_textures_list(&textures);
     objects_free_objects_list(&objectsList);
 

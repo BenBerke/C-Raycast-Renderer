@@ -6,8 +6,45 @@
 #include "../../Headers/Systems/Raycast.h"
 
 #include <math.h>
+#include <stdlib.h>
 
-void light_update(Light* light, WallsList* walls) {
+void lights_create_lights_list(LightsList* list, int chunkSize) {
+    list->count = 0;
+    list->size = chunkSize;
+    list->chunkSize = chunkSize;
+    list->items = malloc((size_t)list->size * sizeof(*list->items));
+}
+
+void light_push_lights_list(LightsList* list, const Light* value) {
+    if (++list->count > list->size) {
+        list->size += list->chunkSize;
+        list->items = realloc(list->items, (size_t)list->size * sizeof(*list->items));
+    }
+    list->items[list->count - 1] = *value;
+}
+
+void light_pop_lights_list(LightsList* list) {
+    if (list->count <= 0) {
+        return;
+    }
+
+    list->count--;
+
+    if (list->size - list->count >= list->chunkSize && list->size > list->chunkSize) {
+        list->size -= list->chunkSize;
+        list->items = realloc(list->items, (size_t)list->size * sizeof(*list->items));
+    }
+}
+
+void light_free_lights_list(LightsList* list) {
+    free(list->items);
+    list->items = NULL;
+    list->count = 0;
+    list->size = 0;
+    list->chunkSize = 0;
+}
+
+void individual_light_update(Light* light, WallsList* walls) {
     for (int i = 0; i < walls->count; i++)
         for (int f = 0; f < 4; f++)
             walls->items[i].faceBrightness[f] = 0.0f;
@@ -52,4 +89,8 @@ void light_update(Light* light, WallsList* walls) {
         for (int i = 0; i < walls->count; i++)
             for (int f = 0; f < 4; f++)
                 walls->items[i].faceBrightness[f] /= maxB;
+}
+
+void light_update(LightsList* lights, WallsList* walls) {
+    for (int i = 0; i < lights->count; i++) individual_light_update(&lights->items[i], walls);
 }

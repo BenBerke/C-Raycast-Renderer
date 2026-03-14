@@ -30,113 +30,10 @@ void end_frame(const Renderer* renderer) {
     SDL_RenderPresent(renderer->renderer);
 }
 
-void render_create_debugSquares_list(DebugSquaresList* list, int chunkSize) {
-    list->count = 0;
-    list->size = chunkSize;
-    list->chunkSize = chunkSize;
-    list->items = malloc((size_t)list->size * sizeof(*list->items));
-}
-
-void render_push_debugSquares_list(DebugSquaresList* list, DebugSquare* value) {
-    if (++list->count > list->size) {
-        list->size += list->chunkSize;
-        list->items = realloc(list->items, (size_t)list->size * sizeof(*list->items));
-    }
-    list->items[list->count - 1] = *value;
-}
-
-void render_pop_debugSquares_list(DebugSquaresList* list) {
-    if (list->count <= 0) {
-        return;
-    }
-
-    list->count--;
-
-    if (list->size - list->count >= list->chunkSize && list->size > list->chunkSize) {
-        list->size -= list->chunkSize;
-        list->items = realloc(list->items, (size_t)list->size * sizeof(*list->items));
-    }
-}
-
-void render_free_debugSquares_list(DebugSquaresList* list) {
-    free(list->items);
-    list->items = NULL;
-    list->count = 0;
-    list->size = 0;
-    list->chunkSize = 0;
-}
-
-void render_debug_walls(const Renderer* renderer, const WallsList* walls) {
-    for (int i = 0; i < walls->count; i++) {
-        SDL_SetRenderDrawColor(
-            renderer->renderer,
-            (Uint8)walls->items[i].color.x,
-            (Uint8)walls->items[i].color.y,
-            (Uint8)walls->items[i].color.z,
-            255
-        );
-
-        const float x = walls->items[i].position.x;
-        const float y = walls->items[i].position.y;
-        const float w = walls->items[i].scale.x;
-        const float h = walls->items[i].scale.y;
-
-        const float screenX = (x + SCREEN_WIDTH / 2.0f) - w / 2.0f;
-        const float screenY = (SCREEN_HEIGHT / 2.0f - y) - h / 2.0f;
-
-        SDL_FRect rect = {screenX, screenY, w, h};
-        SDL_RenderFillRect(renderer->renderer, &rect);
-    }
-}
-
-void render_debug_player(const Renderer* renderer, const Player* player) {
-    SDL_SetRenderDrawColor(renderer->renderer, 160, 160, 60, 255);
-
-    const float x = player->position.x;
-    const float y = player->position.y;
-    const float a = player->scale;
-
-    const float screenX = (x + SCREEN_WIDTH / 2.0f) - a / 2.0f;
-    const float screenY = (SCREEN_HEIGHT / 2.0f - y) - a / 2.0f;
-
-    SDL_FRect rect = {screenX, screenY, a, a};
-    SDL_RenderFillRect(renderer->renderer, &rect);
-}
-
-void render_debug_squares(const Renderer* renderer, const DebugSquaresList* squares) {
-    for (int i = 0; i < squares->count; i++) {
-        SDL_SetRenderDrawColor(
-            renderer->renderer,
-            (Uint8)squares->items[i].color.x,
-            (Uint8)squares->items[i].color.y,
-            (Uint8)squares->items[i].color.z,
-            255
-        );
-
-        const float x = squares->items[i].position.x;
-        const float y = squares->items[i].position.y;
-        const float w = squares->items[i].scale.x;
-        const float h = squares->items[i].scale.y;
-
-        const float screenX = (x + SCREEN_WIDTH / 2.0f) - w / 2.0f;
-        const float screenY = (SCREEN_HEIGHT / 2.0f - y) - h / 2.0f;
-
-        SDL_FRect rect = {screenX, screenY, w, h};
-        SDL_RenderFillRect(renderer->renderer, &rect);
-    }
-}
-
-void render_draw_grid_line(const Renderer* renderer) {
-    SDL_SetRenderDrawColor(renderer->renderer, 45, 45, 45, 255);
-    SDL_RenderLine(renderer->renderer, SCREEN_WIDTH / 2.0f, 0.0f, SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT);
-    SDL_RenderLine(renderer->renderer, 0.0f, SCREEN_HEIGHT / 2.0f, SCREEN_WIDTH, SCREEN_HEIGHT / 2.0f);
-}
-
 void renderer_draw(
     const TexturesList* texturesList,
     const Player* player,
     const WallsList* walls,
-    const DebugSquaresList* debugSquares,
     const Renderer* renderer,
     ObjectsList* objects
 ) {
@@ -149,6 +46,7 @@ void renderer_draw(
     static float columnWallDists[RAY_COUNT][MAX_WALL_OVERLAP];
     static float columnWallTops[RAY_COUNT][MAX_WALL_OVERLAP];
     static int columnWallCounts[RAY_COUNT];
+    static int columnWallAlphas[RAY_COUNT][MAX_WALL_OVERLAP];
 
     for (int rayIndex = 0; rayIndex < RAY_COUNT; rayIndex++) {
         columnDepthBuffer[rayIndex]  = 1e9f;
@@ -210,6 +108,7 @@ void renderer_draw(
             Uint8 r = (Uint8)(hit.r * brightness);
             Uint8 g = (Uint8)(hit.g * brightness);
             Uint8 b = (Uint8)(hit.b * brightness);
+            Uint8 a = (Uint8)(hit.a);
 
             const float textureWidth = texturesList->items[hit.textures[hit.side]].width;
             const float textureHeight = texturesList->items[hit.textures[hit.side]].height;
@@ -232,6 +131,7 @@ void renderer_draw(
             };
 
             SDL_SetTextureColorMod(wallTexture, r, g, b);
+            SDL_SetTextureAlphaMod(wallTexture, a);
             SDL_RenderTexture(renderer->renderer, wallTexture, &src, &dst);
 
             if (hit.distance < columnDepthBuffer[rayIndex]) {
@@ -241,11 +141,8 @@ void renderer_draw(
                 int idx = columnWallCounts[rayIndex]++;
                 columnWallDists[rayIndex][idx] = hit.distance;
                 columnWallTops[rayIndex][idx]  = y1;
+                columnWallAlphas[rayIndex][idx] = a;
             }
-        }
-
-        if (debugSquares != NULL && rayIndex < debugSquares->count) {
-            debugSquares->items[rayIndex].position = nearestRay.position;
         }
     }
     for (int a = 0; a < objects->count - 1; a++) {
@@ -305,7 +202,9 @@ void renderer_draw(
         Uint8 r = (Uint8)(currentObject.color.x * brightness);
         Uint8 g = (Uint8)(currentObject.color.y * brightness);
         Uint8 b = (Uint8)(currentObject.color.z * brightness);
+        Uint8 a = (Uint8)(currentObject.color.q);
         SDL_SetTextureColorMod(spriteTexture, r, g, b);
+        SDL_SetTextureAlphaMod(spriteTexture, a);
 
         for (int col = colStart; col < colEnd; col++) {
             if (col < 0 || col >= SCREEN_WIDTH) continue;
@@ -317,8 +216,10 @@ void renderer_draw(
             float clipTop = SCREEN_HEIGHT;
             for (int w = 0; w < columnWallCounts[bufferIndex]; w++) {
                 if (columnWallDists[bufferIndex][w] < correctedDistance) {
-                    if (columnWallTops[bufferIndex][w] < clipTop) {
-                        clipTop = columnWallTops[bufferIndex][w];
+                    if (columnWallAlphas[bufferIndex][w] == 255) {
+                        if (columnWallTops[bufferIndex][w] < clipTop) {
+                            clipTop = columnWallTops[bufferIndex][w];
+                        }
                     }
                 }
             }

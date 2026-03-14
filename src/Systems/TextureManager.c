@@ -66,6 +66,8 @@ int create_texture(const char* textureNameNoExt, TexturesList* textureList, SDL_
         return -1;
     }
 
+    SDL_SetTextureBlendMode(texture.texture, SDL_BLENDMODE_BLEND);
+
     SDL_GetTextureSize(texture.texture, &texture.width, &texture.height);
     SDL_SetTextureScaleMode(texture.texture, SDL_SCALEMODE_NEAREST);
     textureManager_push_textures_list(textureList, &texture);

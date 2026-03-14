@@ -21,16 +21,18 @@ add_executable(Raycast_Renderer
         Headers/Systems/Physics.h
         src/Systems/Raycast.c
         Headers/Systems/Raycast.h
-        src/Objects/DebugSquare.c
-        Headers/Objects/DebugSquare.h
         Headers/Objects/Ray.h
         src/Systems/TextureManager.c
         Headers/Systems/TextureManager.h
         src/Objects/Object.c
         Headers/Objects/Object.h
-        src/Objects/Object.c
         Headers/Objects/Light.h
         src/Systems/Light.c
+        src/Systems/Debugger.c
+        Headers/Systems/Debugger.h
+        Headers/Tools/Vector4.h
+        src/Tools/Vector4.c
+        Headers/Tools/Vector4.h
 )
 
 find_package(SDL3 CONFIG REQUIRED)

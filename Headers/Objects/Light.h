@@ -15,7 +15,18 @@ typedef struct {
     int rayCount;
 } Light;
 
+typedef struct {
+    Light* items;
+    int count;
+    int size;
+    int chunkSize;
+} LightsList;
 
 
-void light_update(Light* light, WallsList* walls);
+void lights_create_lights_list(LightsList* list, int chunkSize);
+void light_push_lights_list(LightsList* list, const Light* value);
+void light_pop_lights_list(LightsList* list);
+void light_free_lights_list(LightsList* list);
+
+void light_update(LightsList* light, WallsList* walls);
 #endif //RAYCAST_RENDERER_LIGHT_H

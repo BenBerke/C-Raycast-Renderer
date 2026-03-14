@@ -3,6 +3,7 @@
 #include <float.h>
 #include <math.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include "../../config.h"
 
@@ -174,6 +175,7 @@ int raycast_collect_hits(
             .r = (unsigned char)wall->color.x,
             .g = (unsigned char)wall->color.y,
             .b = (unsigned char)wall->color.z,
+            .a = (unsigned char)wall->color.q,
             .side = (char)side,
             .u = u,
             .textures = -1,

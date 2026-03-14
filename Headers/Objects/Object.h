@@ -6,8 +6,7 @@
 #define RAYCAST_RENDERER_SPRITE_H
 
 #include "../Tools/Vector2.h"
-#include "../Tools/Vector3.h"
-#include "../Systems/TextureManager.h"
+#include "../Tools/Vector4.h"
 
 typedef struct {
     Vector2 playerToObject;
@@ -18,7 +17,7 @@ typedef struct {
 typedef struct {
     Vector2 position;
     Vector2 scale;
-    Vector3 color;
+    Vector4 color;
     int texture;
 } Object;
 
