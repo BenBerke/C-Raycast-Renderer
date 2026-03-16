@@ -13,7 +13,9 @@ typedef struct {
     SDL_GPUDevice* device;
     SDL_GPUGraphicsPipeline* pipeline;
     Uint32 numVertices;
+    Uint32 numIndices;
     SDL_GPUBuffer* vertexBuffer;
+    SDL_GPUBuffer* indexBuffer;
     InputManager inputManager;
 } AppState;
 
@@ -128,6 +130,61 @@ bool create_pipeline(AppState* state) {
     return true;
 }
 
+bool create_index_buffer(AppState* state, Uint16* indices, int indexCount) {
+    state->numIndices = indexCount;
+    Uint32 indicesSize = indexCount * sizeof(Uint16);
+
+    SDL_GPUBufferCreateInfo vertexBufferCreateInfo = {
+        .usage = SDL_GPU_BUFFERUSAGE_INDEX,
+        .size = indicesSize,
+    };
+    state->indexBuffer = SDL_CreateGPUBuffer(state->device, &vertexBufferCreateInfo);
+    if (state->indexBuffer == 0) {
+        SDL_Log("Couldn't create index buffer %s", SDL_GetError());
+        return false;
+    }
+    const SDL_GPUTransferBufferCreateInfo transferBufferCreateInfo = {
+        .usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,
+        .size = indicesSize,
+    };
+    SDL_GPUTransferBuffer* transferBuffer = SDL_CreateGPUTransferBuffer(state->device, &transferBufferCreateInfo);
+    if (transferBuffer == NULL) {
+        SDL_Log("Couldn't create transfer buffer %s", SDL_GetError());
+        return false;
+    }
+    Uint16* transferData = (Uint16*)SDL_MapGPUTransferBuffer(state->device, transferBuffer, false);
+    if (transferData == NULL) {
+        SDL_Log("Couldn't create transfer buffer %s", SDL_GetError());
+        return false;
+    }
+    memcpy(transferData, indices, indicesSize);
+    SDL_UnmapGPUTransferBuffer(state->device, transferBuffer);
+
+    SDL_GPUCommandBuffer* uploadCmdBuf = SDL_AcquireGPUCommandBuffer(state->device);
+    if (uploadCmdBuf == NULL) {
+        SDL_Log("Couldn't create command buffer %s", SDL_GetError());
+        return false;
+    }
+    SDL_GPUCopyPass* copyPass =  SDL_BeginGPUCopyPass(uploadCmdBuf);
+    SDL_GPUTransferBufferLocation bufferLocation = {
+        .transfer_buffer = transferBuffer,
+        .offset =  0,
+    };
+    SDL_GPUBufferRegion bufferRegion = {
+        .buffer = state->indexBuffer,
+        .offset = 0,
+        .size = indicesSize,
+    };
+    SDL_UploadToGPUBuffer(copyPass, &bufferLocation, &bufferRegion, false);
+    SDL_EndGPUCopyPass(copyPass);
+    if (!SDL_SubmitGPUCommandBuffer(uploadCmdBuf)) {
+        SDL_Log("Couldn't submit command buffer %s", SDL_GetError());
+        return false;
+    }
+    SDL_ReleaseGPUTransferBuffer(state->device, transferBuffer);
+    return true;
+}
+
 bool create_vertex_buffer(AppState* state, Vertex* vertices, int vertexCount) {
     state->numVertices = vertexCount;
     Uint32 verticesSize = state->numVertices * sizeof(Vertex);
@@ -140,7 +197,7 @@ bool create_vertex_buffer(AppState* state, Vertex* vertices, int vertexCount) {
         SDL_Log("Couldn't create vertex buffer %s", SDL_GetError());
         return false;
     }
-    SDL_GPUTransferBufferCreateInfo transferBufferCreateInfo = {
+    const SDL_GPUTransferBufferCreateInfo transferBufferCreateInfo = {
         .usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,
         .size = verticesSize,
     };
@@ -193,8 +250,19 @@ int main(int argc, char* argv[]) {
     SDL_ClaimWindowForGPUDevice(state.device, state.window);
 
     if (!create_pipeline(&state)) return -1;
-    Vertex vertices[] = {{-1.0f, .0f, 0}, {1.0f, -1.0f, 0}, {0.0f, 1.0f, 0}};
-    create_vertex_buffer(&state, vertices, 3);
+    Vertex vertices[] = {
+        {-0.5f,  0.5f, 0.0f}, // 0: Top Left
+        {-0.5f, -0.5f, 0.0f}, // 1: Bottom Left
+        { 0.5f, -0.5f, 0.0f}, // 2: Bottom Right
+        { 0.5f,  0.5f, 0.0f}, // 3: Top Right
+    };
+
+    Uint16 indices[] = {
+        0, 1, 2, // First triangle
+        0, 2, 3  // Second triangle
+    };
+    create_vertex_buffer(&state, vertices, sizeof(vertices)/sizeof(vertices[0]));
+    create_index_buffer(&state, indices, sizeof(indices)/sizeof(indices[0]));
 
     bool running = true;
     SDL_Event event;
@@ -214,9 +282,13 @@ int main(int argc, char* argv[]) {
                     .store_op = SDL_GPU_STOREOP_STORE,
                 };
                 SDL_GPURenderPass* renderPass = SDL_BeginGPURenderPass(commandBuffer, &colorTargetInfo, 1, NULL);
+
                 SDL_BindGPUGraphicsPipeline(renderPass, state.pipeline);
                 SDL_BindGPUVertexBuffers(renderPass, 0, &(SDL_GPUBufferBinding){.buffer = state.vertexBuffer}, 1);
-                SDL_DrawGPUPrimitives(renderPass, state.numVertices, 1, 0, 0);
+                SDL_BindGPUIndexBuffer(renderPass, &(SDL_GPUBufferBinding){.buffer = state.indexBuffer}, SDL_GPU_INDEXELEMENTSIZE_16BIT);
+
+                SDL_DrawGPUIndexedPrimitives(renderPass, state.numIndices, 1, 0, 0, 0);
+
                 SDL_EndGPURenderPass(renderPass);
             }
         }
