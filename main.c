@@ -1,5 +1,4 @@
 #include <SDL3/SDL.h>
-#define SDL_MAIN_USE_CALLBACKS
 #include <stdio.h>
 #include <stdlib.h>
 #include <SDL3/SDL_main.h>
@@ -7,6 +6,7 @@
 #include <string.h>
 
 #include "config.h"
+#include "Headers/Systems/InputManager.h"
 
 typedef struct {
     SDL_Window* window;
@@ -14,6 +14,7 @@ typedef struct {
     SDL_GPUGraphicsPipeline* pipeline;
     Uint32 numVertices;
     SDL_GPUBuffer* vertexBuffer;
+    InputManager inputManager;
 } AppState;
 
 typedef struct {
@@ -183,89 +184,47 @@ bool create_vertex_buffer(AppState* state, Vertex* vertices, int vertexCount) {
 }
 
 
-SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
-    AppState* state = (AppState*)malloc(sizeof(AppState));
-    *appstate = state;
-    state->window = SDL_CreateWindow("Hello World", SCREEN_WIDTH, SCREEN_HEIGHT, 0);
-    if (state->window == NULL) {
-        SDL_Log("Window creation failed: %s", SDL_GetError());
-        return SDL_APP_FAILURE;
+int main(int argc, char* argv[]) {
+    if (!SDL_Init(SDL_INIT_VIDEO)) return -1;
+
+    AppState state = {0};
+    state.window = SDL_CreateWindow("Hello World", SCREEN_WIDTH, SCREEN_HEIGHT, 0);
+    state.device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV | SDL_GPU_SHADERFORMAT_DXIL | SDL_GPU_SHADERFORMAT_MSL, true, NULL);
+    SDL_ClaimWindowForGPUDevice(state.device, state.window);
+
+    if (!create_pipeline(&state)) return -1;
+    Vertex vertices[] = {{-1.0f, .0f, 0}, {1.0f, -1.0f, 0}, {0.0f, 1.0f, 0}};
+    create_vertex_buffer(&state, vertices, 3);
+
+    bool running = true;
+    SDL_Event event;
+
+    while (running) {
+        input_manager_begin_frame(&state.inputManager);
+        if (input_manager_get_key_down(&state.inputManager, SDL_SCANCODE_ESCAPE)) running = false;
+
+        SDL_GPUCommandBuffer* commandBuffer = SDL_AcquireGPUCommandBuffer(state.device);
+        SDL_GPUTexture* swapChainTexture;
+        if (SDL_WaitAndAcquireGPUSwapchainTexture(commandBuffer, state.window, &swapChainTexture, NULL, NULL)) {
+            if (swapChainTexture != NULL) {
+                SDL_GPUColorTargetInfo colorTargetInfo = {
+                    .texture = swapChainTexture,
+                    .clear_color = (SDL_FColor){1.0f, 0.4f, 1.0f, 1.0f},
+                    .load_op = SDL_GPU_LOADOP_CLEAR,
+                    .store_op = SDL_GPU_STOREOP_STORE,
+                };
+                SDL_GPURenderPass* renderPass = SDL_BeginGPURenderPass(commandBuffer, &colorTargetInfo, 1, NULL);
+                SDL_BindGPUGraphicsPipeline(renderPass, state.pipeline);
+                SDL_BindGPUVertexBuffers(renderPass, 0, &(SDL_GPUBufferBinding){.buffer = state.vertexBuffer}, 1);
+                SDL_DrawGPUPrimitives(renderPass, state.numVertices, 1, 0, 0);
+                SDL_EndGPURenderPass(renderPass);
+            }
+        }
+        SDL_SubmitGPUCommandBuffer(commandBuffer);
     }
-    const SDL_GPUShaderFormat formatFlags = SDL_GPU_SHADERFORMAT_SPIRV | SDL_GPU_SHADERFORMAT_DXIL | SDL_GPU_SHADERFORMAT_MSL;
-    state->device = SDL_CreateGPUDevice(formatFlags, true, 0);
-    if (state->device == NULL) {
-        SDL_Log("Unable to create GPU device: %s", SDL_GetError());
-        return SDL_APP_FAILURE;
-    }
-    if (!SDL_ClaimWindowForGPUDevice(state->device, state->window)) {
-        SDL_Log("Unable to claim window for GPU device: %s", SDL_GetError());
-        return SDL_APP_FAILURE;
-    }
 
-    if (!create_pipeline(state)) return SDL_APP_FAILURE;
-
-    Vertex vertices[] = {
-        {-1.0f, -1.0f, .0f},
-            {1.0f, -1.0f, .0f},
-            {0.0f, 1.0f, 0.0f},
-    };
-    if (!create_vertex_buffer(state, vertices, sizeof(vertices)/sizeof(vertices[0]))) return SDL_APP_FAILURE;
-
-    return SDL_APP_CONTINUE;
-}
-
-SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event){
-    switch (event->type)
-    {
-        case SDL_EVENT_QUIT:
-            // Quit the application with a success state
-            return SDL_APP_SUCCESS;
-        default:
-            // Continue running the application
-            return SDL_APP_CONTINUE;
-    }
-}
-
-SDL_AppResult SDL_AppIterate(void* appstate){
-    const AppState* state = (AppState*)appstate;
-    SDL_GPUCommandBuffer* commandBuffer = SDL_AcquireGPUCommandBuffer(state->device);
-    if (commandBuffer == NULL) {
-        SDL_Log("Unable to acquire GPU command buffer: %s", SDL_GetError());
-        return SDL_APP_FAILURE;
-    }
-    SDL_GPUTexture* swapChainTexture = 0;
-    if (!SDL_WaitAndAcquireGPUSwapchainTexture(commandBuffer, state->window, &swapChainTexture, 0, 0)){
-        SDL_Log("Unable to wait for GPU swap chain texture: %s", SDL_GetError());
-        return SDL_APP_FAILURE;
-    }
-    if (swapChainTexture != NULL) {
-        const SDL_FColor clearColor = {1.0f, 0.4f, 1.0f, 1.0f};
-        const SDL_GPUColorTargetInfo colorTargetInfo = {
-            .texture = swapChainTexture,
-            .clear_color = clearColor,
-            .load_op = SDL_GPU_LOADOP_CLEAR,
-            .store_op = SDL_GPU_STOREOP_STORE,
-        };
-        SDL_GPURenderPass* renderPass = SDL_BeginGPURenderPass(commandBuffer, &colorTargetInfo, 1, 0);
-
-        SDL_BindGPUGraphicsPipeline(renderPass, state->pipeline);
-        SDL_GPUBufferBinding vertexBuffers[] = {
-            {
-                .buffer = state->vertexBuffer,
-                .offset = 0,
-            },
-        };
-        SDL_BindGPUVertexBuffers(renderPass, 0, vertexBuffers, sizeof(vertexBuffers)/sizeof(vertexBuffers[0]));
-        SDL_DrawGPUPrimitives(renderPass, state->numVertices, 1, 0, 0);
-
-        SDL_EndGPURenderPass(renderPass);
-    }
-    SDL_SubmitGPUCommandBuffer(commandBuffer);
-    return SDL_APP_CONTINUE;
-}
-
-void SDL_AppQuit(void* appstate, SDL_AppResult result){
-    const AppState* appState = (AppState*)appstate;
-    SDL_ReleaseWindowFromGPUDevice(appState->device, appState->window);
-    SDL_DestroyWindow(appState->window);
+    SDL_ReleaseWindowFromGPUDevice(state.device, state.window);
+    SDL_DestroyWindow(state.window);
+    SDL_Quit();
+    return 0;
 }
