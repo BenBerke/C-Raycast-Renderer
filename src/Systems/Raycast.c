@@ -1,12 +1,13 @@
+#define USE_MATH_DEFINES
 #include "../../Headers/Systems/Raycast.h"
-
 #include <float.h>
 #include <math.h>
 #include <stdbool.h>
-#include <string.h>
+#include <stddef.h>
 
 #include "../../config.h"
 
+// Keeps the core AABB ray-box intersection math
 bool ray_intersect_wall(Vector2 origin, Vector2 dir, const Wall* wall, float* outT, int* outSide) {
     const float minX = wall->position.x - wall->scale.x / 2.0f;
     const float maxX = wall->position.x + wall->scale.x / 2.0f;
@@ -15,187 +16,84 @@ bool ray_intersect_wall(Vector2 origin, Vector2 dir, const Wall* wall, float* ou
 
     float tMin = -FLT_MAX;
     float tMax = FLT_MAX;
-
     int enterSide = -1;
-    int exitSide = -1;
 
-    if (fabsf(dir.x) < 0.00001f) {
-        if (origin.x < minX || origin.x > maxX) {
-            return false;
-        }
-    } else {
+    // X-axis check
+    if (fabsf(dir.x) > 0.00001f) {
         float tx1 = (minX - origin.x) / dir.x;
         float tx2 = (maxX - origin.x) / dir.x;
-        int tx1Side = 1;
-        int tx2Side = 3;
+        if (tx1 > tx2) { float tmp = tx1; tx1 = tx2; tx2 = tmp; }
+        if (tx1 > tMin) { tMin = tx1; enterSide = (dir.x > 0) ? 3 : 1; }
+        if (tx2 < tMax) tMax = tx2;
+    } else if (origin.x < minX || origin.x > maxX) return false;
 
-        if (tx1 > tx2) {
-            float tempT = tx1;
-            tx1 = tx2;
-            tx2 = tempT;
-
-            int tempSide = tx1Side;
-            tx1Side = tx2Side;
-            tx2Side = tempSide;
-        }
-
-        if (tx1 > tMin) {
-            tMin = tx1;
-            enterSide = tx1Side;
-        }
-        if (tx2 < tMax) {
-            tMax = tx2;
-            exitSide = tx2Side;
-        }
-    }
-
-    if (fabsf(dir.y) < 0.00001f) {
-        if (origin.y < minY || origin.y > maxY) {
-            return false;
-        }
-    } else {
+    // Y-axis check
+    if (fabsf(dir.y) > 0.00001f) {
         float ty1 = (minY - origin.y) / dir.y;
         float ty2 = (maxY - origin.y) / dir.y;
-        int ty1Side = 2;
-        int ty2Side = 0;
+        if (ty1 > ty2) { float tmp = ty1; ty1 = ty2; ty2 = tmp; }
+        if (ty1 > tMin) { tMin = ty1; enterSide = (dir.y > 0) ? 0 : 2; }
+        if (ty2 < tMax) tMax = ty2;
+    } else if (origin.y < minY || origin.y > maxY) return false;
 
-        if (ty1 > ty2) {
-            float tempT = ty1;
-            ty1 = ty2;
-            ty2 = tempT;
+    if (tMin > tMax || tMax < 0.0f) return false;
 
-            int tempSide = ty1Side;
-            ty1Side = ty2Side;
-            ty2Side = tempSide;
-        }
-
-        if (ty1 > tMin) {
-            tMin = ty1;
-            enterSide = ty1Side;
-        }
-        if (ty2 < tMax) {
-            tMax = ty2;
-            exitSide = ty2Side;
-        }
-    }
-
-    if (tMin > tMax) return false;
-    if (tMax < 0.0f) return false;
-
-    if (tMin >= 0.0f) {
-        *outT = tMin;
-        *outSide = enterSide;
-    } else {
-        *outT = tMax;
-        *outSide = exitSide;
-    }
-
+    *outT = tMin;
+    *outSide = enterSide;
     return true;
 }
 
-static void sort_hits_far_to_near(RayReturn* hits, int count) {
-    for (int i = 0; i < count - 1; i++) {
-        for (int j = i + 1; j < count; j++) {
-            if (hits[i].distance < hits[j].distance) {
-                RayReturn temp = hits[i];
-                hits[i] = hits[j];
-                hits[j] = temp;
+// The "Collector" function: Finds the nearest wall and prepares the GPU data
+void raycast_to_gpu_buffer(const Player* player, const WallsList* walls, RaySlice* outBuffer) {
+    const float fovRadians = FOV * (M_PI / 180.0f);
+    const float projectionPlane = (SCREEN_WIDTH / 2.0f) / tanf(fovRadians / 2.0f);
+
+    for (int i = 0; i < RAY_COUNT; i++) {
+        // 1. Calculate ray direction using atan2 logic to prevent fisheye
+        float screenX = (RAY_COUNT / 2.0f - i) * (SCREEN_WIDTH / RAY_COUNT);
+        float rayAngleOffset = atan2f(screenX, projectionPlane);
+        float rayAngle = player->angle + rayAngleOffset;
+        Vector2 dir = { cosf(rayAngle), sinf(rayAngle) };
+
+        float nearestT = FLT_MAX;
+        int nearestSide = -1;
+        const Wall* hitWall = NULL;
+
+        // 2. Find ONLY the nearest wall
+        for (int j = 0; j < walls->count; j++) {
+            float t;
+            int side;
+            if (ray_intersect_wall(player->position, dir, &walls->items[j], &t, &side)) {
+                if (t >= 0 && t < nearestT) {
+                    nearestT = t;
+                    nearestSide = side;
+                    hitWall = &walls->items[j];
+                }
             }
         }
+
+        // 3. Fill the RaySlice for the GPU
+        if (hitWall != NULL) {
+            float correctedDist = nearestT * cosf(rayAngleOffset);
+
+            // Standard Wolfenstein perspective math
+            outBuffer[i].wallHeight = (WALL_HEIGHT / correctedDist) * projectionPlane;
+
+            // Calculate U (horizontal texture mapping)
+            float hitX = player->position.x + dir.x * nearestT;
+            float hitY = player->position.y + dir.y * nearestT;
+            float u = 0.0f;
+            if (nearestSide == 0 || nearestSide == 2) u = (hitX - (hitWall->position.x - hitWall->scale.x/2.0f)) / hitWall->scale.x;
+            else u = (hitY - (hitWall->position.y - hitWall->scale.y/2.0f)) / hitWall->scale.y;
+
+            outBuffer[i].u = fmaxf(0.0f, fminf(1.0f, u));
+            outBuffer[i].textureIndex = hitWall->textures[nearestSide];
+
+            // Distance-based shading
+            float ambient = 0.2f;
+            outBuffer[i].brightness = ambient + (1.0f - ambient) * (1.0f - fminf(correctedDist / 1000.0f, 1.0f));
+        } else {
+            outBuffer[i].wallHeight = 0.0f; // Don't draw if nothing hit
+        }
     }
-}
-
-int raycast_collect_hits(
-    Ray* nearestRay,
-    const Player* player,
-    const Vector2 dir,
-    const WallsList* list,
-    RayReturn* outHits,
-    const int maxHits
-) {
-    const Vector2 origin = player->position;
-
-    int hitCount = 0;
-    float nearestT = (float)MAX_RAY_LENGTH;
-    bool foundNearest = false;
-
-    for (int i = 0; i < maxHits; i++) {
-        outHits[i] = (RayReturn){-1.0f, 0, 0, 0, -1, 0, 0, {0, 0, 0, 0}};
-    }
-
-    for (int i = 0; i < list->count; i++) {
-        float t = 0.0f;
-        int side = -1;
-        const Wall* wall = &list->items[i];
-
-        if (!ray_intersect_wall(origin, dir, wall, &t, &side)) {
-            continue;
-        }
-        if (t < 0.0f) {
-            continue;
-        }
-
-        if (t < nearestT) {
-            nearestT = t;
-            foundNearest = true;
-        }
-
-        if (hitCount >= maxHits) {
-            continue;
-        }
-
-        const float hitX = origin.x + dir.x * t;
-        const float hitY = origin.y + dir.y * t;
-
-        const float minX = wall->position.x - wall->scale.x / 2.0f;
-        const float minY = wall->position.y - wall->scale.y / 2.0f;
-
-        float u = 0.0f;
-        switch (side) {
-            case 0:
-            case 2:
-                u = (hitX - minX) / wall->scale.x;
-                break;
-
-            case 1:
-            case 3:
-                u = (hitY - minY) / wall->scale.y;
-                break;
-
-            default:
-                u = 0.0f;
-                break;
-        }
-
-        if (u < 0.0f) u = 0.0f;
-        if (u > 1.0f) u = 1.0f;
-
-        outHits[hitCount] = (RayReturn){
-            .distance = t,
-            .r = (unsigned char)wall->color.x,
-            .g = (unsigned char)wall->color.y,
-            .b = (unsigned char)wall->color.z,
-            .a = (unsigned char)wall->color.q,
-            .side = (char)side,
-            .u = u,
-            .textures = -1,
-            .height = wall->height,
-            .faceBrightness = 0,
-        };
-        memcpy(outHits[hitCount].textures, wall->textures, 4 * sizeof(int));
-        memcpy(outHits[hitCount].faceBrightness, wall->faceBrightness, 4 * sizeof(float));
-
-        hitCount++;
-    }
-
-    if (foundNearest) {
-        nearestRay->position.x = origin.x + dir.x * nearestT;
-        nearestRay->position.y = origin.y + dir.y * nearestT;
-    } else {
-        nearestRay->position.x = origin.x + dir.x * MAX_RAY_LENGTH;
-        nearestRay->position.y = origin.y + dir.y * MAX_RAY_LENGTH;
-    }
-
-    sort_hits_far_to_near(outHits, hitCount);
-    return hitCount;
 }
