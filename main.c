@@ -1,3 +1,4 @@
+#include <math.h>
 #include <SDL3/SDL.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,6 +11,33 @@
 #include "Headers/Systems/Renderer.h"
 #include "Headers/AppState.h"
 #include "Headers/Systems/Raycast.h"
+
+static void movement(const InputManager* inputManager, Player* player, float deltaTime) {
+    const Vector2 forward = { cosf(player->angle), sinf(player->angle) };
+    const Vector2 right = { -sinf(player->angle), cosf(player->angle) };
+
+    if (input_manager_get_key(inputManager, SDL_SCANCODE_W)) {
+        player_add_velocity(player, vector2_multiply_with_float(forward, player->speed * deltaTime));
+    }
+    if (input_manager_get_key(inputManager, SDL_SCANCODE_S)) {
+        player_add_velocity(player, vector2_multiply_with_float(forward, -player->speed * deltaTime ));
+    }
+    if (input_manager_get_key(inputManager, SDL_SCANCODE_D)) {
+        player_add_velocity(player, vector2_multiply_with_float(right, -player->speed * deltaTime));
+    }
+    if (input_manager_get_key(inputManager, SDL_SCANCODE_A)) {
+        player_add_velocity(player, vector2_multiply_with_float(right, player->speed * deltaTime));
+    }
+
+    if (input_manager_get_key(inputManager, SDL_SCANCODE_RIGHT) ||
+        input_manager_get_key(inputManager, SDL_SCANCODE_E)) {
+        player->angle -= PLAYER_ROT_SPEED * deltaTime;
+        }
+    if (input_manager_get_key(inputManager, SDL_SCANCODE_LEFT) ||
+        input_manager_get_key(inputManager, SDL_SCANCODE_Q)) {
+        player->angle += PLAYER_ROT_SPEED * deltaTime;
+        }
+}
 
 int main(int argc, char* argv[]) {
     if (!SDL_Init(SDL_INIT_VIDEO)) return -1;
@@ -63,8 +91,14 @@ int main(int argc, char* argv[]) {
     }
 
     bool running = true;
+    Uint64 lastTime = SDL_GetTicksNS();
     while (running) {
+        Uint64 currentTime = SDL_GetTicksNS();
+        Uint32 startTime = SDL_GetTicks();
+        float deltaTime = (float)(currentTime - lastTime) / 1000000000.0f;
+        lastTime = currentTime;
         input_manager_begin_frame(&state.inputManager);
+
         if (input_manager_get_key_down(&state.inputManager, SDL_SCANCODE_ESCAPE)) running = false;
         if (input_manager_get_key_down(&state.inputManager, SDL_SCANCODE_W))
 
@@ -94,6 +128,18 @@ int main(int argc, char* argv[]) {
             }
         }
         SDL_SubmitGPUCommandBuffer(commandBuffer);
+        Uint32 frameTime = SDL_GetTicks() - startTime;
+        if (FRAME_DELAY > frameTime) {
+            SDL_Delay(FRAME_DELAY - frameTime);
+        }
+
+        frames++;
+        Uint32 now = SDL_GetTicks();
+        if (now - fpsTimer >= 1000) {
+            currentFps = frames * 1000.0f / (float)(now - fpsTimer);
+            fpsTimer = now;
+            frames = 0;
+        }
     }
 
     physics_free_walls_list(&wallsList);
