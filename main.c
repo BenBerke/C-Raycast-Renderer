@@ -11,6 +11,9 @@
 #include "Headers/Systems/Renderer.h"
 #include "Headers/AppState.h"
 #include "Headers/Systems/Raycast.h"
+static Uint32 fpsTimer = 0;
+static int frames = 0;
+static float currentFps = 0.0f;
 
 static void movement(const InputManager* inputManager, Player* player, float deltaTime) {
     const Vector2 forward = { cosf(player->angle), sinf(player->angle) };
@@ -73,12 +76,12 @@ int main(int argc, char* argv[]) {
     RaySlice rayData[RAY_COUNT] = {0};
 
 
-    Player player = {.position = {0, 0}, .scale = 15.0f, .velocity = {0, 0}, .speed = 15.0f, .friction = 0.0f, .angle = 0};
+    Player player = {.position = {0, 0}, .scale = 15.0f, .velocity = {0, 0}, .speed = 15.0f, .friction = 3.0f, .angle = 0};
 
     WallsList wallsList;
     physics_create_walls_list(&wallsList, 8);
     Wall walls[] = {
-        {.position = {100, 0}, .scale=15.0f, .color={255,255,255,255}, .textures={0,0,0,0}, .height=150, .faceBrightness = {0,0,0,0}},
+        {.position = {10, 0}, .scale={15.0f, 15.0f}, .color={255,255,255,255}, .textures={0,0,0,0}, .height=150, .faceBrightness = {0,0,0,0}},
     };
     for (int i = 0; i < sizeof(walls) / sizeof(walls[0]); i++) {
         physics_push_walls_list(&wallsList , &walls[i]);
@@ -100,8 +103,11 @@ int main(int argc, char* argv[]) {
         input_manager_begin_frame(&state.inputManager);
 
         if (input_manager_get_key_down(&state.inputManager, SDL_SCANCODE_ESCAPE)) running = false;
-        if (input_manager_get_key_down(&state.inputManager, SDL_SCANCODE_W))
+        movement(&state.inputManager, &player, deltaTime);
 
+        player_update(&player);
+
+        raycast_to_gpu_buffer(&player, &wallsList, rayData);
         if (!renderer_update_raySlice_data_buffer(&state, rayData, RAY_COUNT)) {
             SDL_Log("Couldn't update ray slice data buffer");
         }

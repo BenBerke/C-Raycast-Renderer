@@ -75,10 +75,9 @@ void raycast_to_gpu_buffer(const Player* player, const WallsList* walls, RaySlic
         // 3. Fill the RaySlice for the GPU
         if (hitWall != NULL) {
             float correctedDist = nearestT * cosf(rayAngleOffset);
-
-            // Standard Wolfenstein perspective math
-            outBuffer[i].wallHeight = (WALL_HEIGHT / correctedDist) * projectionPlane;
             if (correctedDist < 0.001f) correctedDist = 0.001f;
+
+            outBuffer[i].wallHeight = (WALL_HEIGHT / correctedDist) * projectionPlane;
 
             // Calculate U (horizontal texture mapping)
             float hitX = player->position.x + dir.x * nearestT;
