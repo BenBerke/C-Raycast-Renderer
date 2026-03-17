@@ -5,6 +5,7 @@
 #include <SDL3/SDL_main.h>
 #include <SDL3/SDL_gpu.h>
 
+
 #include <string.h>
 
 #include "config.h"
@@ -24,8 +25,12 @@ typedef struct {
     float time;
 } UniformBuffer;
 
+typedef struct {
+    float pos;
+} PosUniformBuffer;
+
 static Vertex vertices[] = {
-    {0.0f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f},     // top vertex
+    {0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f},     // top vertex
     {-0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f},   // bottom left vertex
     {0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f},     // bottom right vertex
 };
@@ -93,6 +98,10 @@ int main(int argc, char* argv[]) {
         .usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,
     };
     SDL_GPUTransferBuffer* transferBuffer = SDL_CreateGPUTransferBuffer(device, &transferBufferInfo);
+    if (!transferBuffer) {
+        SDL_Log("Failed to create transfer buffer: %s", SDL_GetError());
+        return -1;
+    }
 
     Vertex* data = (Vertex*)SDL_MapGPUTransferBuffer(device, transferBuffer, false);
     memcpy(data, vertices, sizeof(vertices));
@@ -128,7 +137,7 @@ int main(int argc, char* argv[]) {
         .num_samplers = 0,
         .num_storage_buffers = 0,
         .num_storage_textures = 0,
-        .num_uniform_buffers = 0,
+        .num_uniform_buffers = 1,
     };
     SDL_GPUShader* vertexShader = SDL_CreateGPUShader(device, &vertexInfo);
     if (!vertexShader) {
@@ -203,10 +212,15 @@ int main(int argc, char* argv[]) {
     pipeLineInfo.target_info.color_target_descriptions = colorTargetDescriptions;
 
     SDL_GPUGraphicsPipeline* graphicsPipeline = SDL_CreateGPUGraphicsPipeline(device, &pipeLineInfo);
+    if (!graphicsPipeline) {
+        SDL_Log("Couldn't create graphics pipeline: %s", SDL_GetError());
+        return -1;
+    }
     SDL_ReleaseGPUShader(device, vertexShader);
     SDL_ReleaseGPUShader(device, fragmentShader);
 
     UniformBuffer timeBuffer = {0};
+    PosUniformBuffer posBuffer = {.pos = 0.5f};
 
     Player player = {.position = {0, 0}, .scale = 15.0f, .velocity = {0, 0}, .speed = .1f, .friction = 3.0f, .angle = 0};
     InputManager inputManager = {0};
@@ -274,7 +288,13 @@ int main(int argc, char* argv[]) {
         SDL_BindGPUVertexBuffers(renderPass, 0, bufferBindings, sizeof(bufferBindings)/sizeof(bufferBindings[0]));
 
         timeBuffer.time = SDL_GetTicksNS() / 1e9f;
+
+        if (input_manager_get_key_down(&inputManager, SDL_SCANCODE_1)) posBuffer.pos += 0.1f;
+        if (input_manager_get_key_down(&inputManager, SDL_SCANCODE_2)) posBuffer.pos -= 0.1f;
+
         SDL_PushGPUFragmentUniformData(commandBuffer, 0, &timeBuffer, sizeof(UniformBuffer));
+        SDL_PushGPUVertexUniformData(commandBuffer, 1, &posBuffer, sizeof(PosUniformBuffer));
+
         SDL_DrawGPUPrimitives(renderPass, sizeof(vertices)/sizeof(vertices[0]), 1, 0, 0);
 
         SDL_EndGPURenderPass(renderPass);
