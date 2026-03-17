@@ -26,9 +26,6 @@ add_executable(Raycast_Renderer
         Headers/Objects/Object.h
         Headers/Tools/Vector4.h
         src/Tools/Vector4.c
-        Headers/AppState.h
-        src/Systems/Debugger.c
-        Headers/Systems/Debugger.h
 )
 
 find_package(SDL3 CONFIG REQUIRED)
@@ -51,10 +48,8 @@ if(NOT SHADERCROSS)
 endif()
 
 set(HLSL_SHADERS
-        "${CMAKE_SOURCE_DIR}/shaders/Raycast.vert.hlsl"
-        "${CMAKE_SOURCE_DIR}/shaders/SolidColor.frag.hlsl"
-        "${CMAKE_SOURCE_DIR}/shaders/Debug.vert.hlsl"
-        "${CMAKE_SOURCE_DIR}/shaders/Debug.frag.hlsl"
+        "${CMAKE_CURRENT_SOURCE_DIR}/shaders/triangle.vertex.hlsl"
+        "${CMAKE_SOURCE_DIR}/shaders/triangle.frag.hlsl"
 )
 
 set(COMPILED_SHADERS "")
