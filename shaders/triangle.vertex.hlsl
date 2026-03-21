@@ -18,7 +18,7 @@ struct Output
 Output main(Input input)
 {
     Output output;
-    output.v_position = float4(input.a_position.x + pos, input.a_position.y, input.a_position.z, 1.0f);
+    output.v_position = float4(input.a_position.x, input.a_position.y, input.a_position.z, 1.0f);
     output.v_color = input.a_color;
     return output;
 }

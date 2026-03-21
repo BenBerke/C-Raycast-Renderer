@@ -29,11 +29,14 @@ typedef struct {
     float pos;
 } PosUniformBuffer;
 
+
 static Vertex vertices[] = {
-    {0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f},     // top vertex
-    {-0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f},   // bottom left vertex
-    {0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f},     // bottom right vertex
+    { -0.05f,  0.8f, 0.0f, 1,0,0,1 },  // top left
+    {  0.05f,  0.8f, 0.0f, 1,0,0,1 },  // top right
+    { -0.05f, -0.8f, 0.0f, 1,0,0,1 },  // bottom left
+    {  0.05f, -0.8f, 0.0f, 1,0,0,1 }   // bottom right
 };
+
 
 static void movement(const InputManager* inputManager, Player* player, float deltaTime) {
     const Vector2 forward = { cosf(player->angle), sinf(player->angle) };
@@ -93,6 +96,7 @@ int main(int argc, char* argv[]) {
         SDL_Log("Failed to create vertex buffer: %s", SDL_GetError());
         return -1;
     }
+
     SDL_GPUTransferBufferCreateInfo transferBufferInfo = {
         .size = sizeof(vertices),
         .usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,
@@ -173,7 +177,7 @@ int main(int argc, char* argv[]) {
     SDL_GPUGraphicsPipelineCreateInfo pipeLineInfo = {
         .vertex_shader = vertexShader,
         .fragment_shader = fragmentShader,
-        .primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
+        .primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLESTRIP,
     };
     SDL_GPUVertexBufferDescription vertexBufferDescription[] = {
         {
@@ -289,8 +293,9 @@ int main(int argc, char* argv[]) {
 
         timeBuffer.time = SDL_GetTicksNS() / 1e9f;
 
-        if (input_manager_get_key_down(&inputManager, SDL_SCANCODE_1)) posBuffer.pos += 0.1f;
-        if (input_manager_get_key_down(&inputManager, SDL_SCANCODE_2)) posBuffer.pos -= 0.1f;
+        if (input_manager_get_key(&inputManager, SDL_SCANCODE_1)) posBuffer.pos += 0.001f;
+        if (input_manager_get_key(&inputManager, SDL_SCANCODE_2)) posBuffer.pos -= 0.001f;
+
 
         SDL_PushGPUFragmentUniformData(commandBuffer, 0, &timeBuffer, sizeof(UniformBuffer));
         SDL_PushGPUVertexUniformData(commandBuffer, 1, &posBuffer, sizeof(PosUniformBuffer));
