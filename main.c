@@ -279,10 +279,6 @@ int main(int argc, char* argv[]) {
         SDL_GPURenderPass* renderPass = SDL_BeginGPURenderPass(commandBuffer, &colorTargetInfo, 1, NULL);
 
         SDL_BindGPUGraphicsPipeline(renderPass, graphicsPipeline);
-        if (!graphicsPipeline) {
-            SDL_Log("Couldn't create graphics pipeline: %s", SDL_GetError());
-            return -1;
-        }
         SDL_GPUBufferBinding bufferBindings[] = {
             {
                 .buffer = vertexBuffer,
@@ -293,7 +289,7 @@ int main(int argc, char* argv[]) {
 
         timeBuffer.time = SDL_GetTicksNS() / 1e9f;
 
-        if (input_manager_get_key(&inputManager, SDL_SCANCODE_1)) posBuffer.pos += 0.001f;
+        if (input_manager_get_key(&inputManager, SDL_SCANCODE_1)) posBuffer.pos += 0.1f;
         if (input_manager_get_key(&inputManager, SDL_SCANCODE_2)) posBuffer.pos -= 0.001f;
 
 
